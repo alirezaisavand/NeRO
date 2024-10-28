@@ -321,7 +321,8 @@ class NeROShapeRenderer(nn.Module):
         else:
             cam_cen[..., 2] = 0
 
-        Y = torch.zeros([1, 3]).expand(pn, 3)
+        # Y = torch.zeros([1, 3]).expand(pn, 3)
+        Y = torch.zeros([1, 3]).repeat(pn, 1)
         Y[:, 2] = -1.0
         Z = torch.clone(poses[:, 2, :3])  # pn, 3
         Z[:, 2] = 0
