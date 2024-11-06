@@ -89,8 +89,6 @@ class Trainer:
         self.lr_manager = name2lr_manager[self.cfg['lr_type']](self.cfg['lr_cfg'])
         self.optimizer = self.lr_manager.construct_optimizer(self.optimizer, self.network)
 
-    def parse_opt(self, cfg):
-
 
     def __init__(self, cfg):
         self.cfg = {**self.default_cfg, **cfg}
