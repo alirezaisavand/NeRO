@@ -43,3 +43,8 @@ total_step: 100000
 val_interval: 5000
 save_interval: 500
 train_log_step: 10
+
+####neural_points####
+point_features_dim: 32
+feature_init_method: "rand"
+feedforward: 0

@@ -8,6 +8,8 @@ import mcubes
 from utils.base_utils import az_el_to_points, sample_sphere
 from utils.raw_utils import linear_to_srgb
 from utils.ref_utils import generate_ide_fn
+from pointnerf.models.neural_points.neural_points import NeuralPoints
+from pointnerf.models.aggregators.point_aggregators import PointAggregator
 
 
 # Positional encoding embedding. Code was taken from https://github.com/bmild/nerf.
@@ -386,8 +388,8 @@ def IPE(mean, var, min_deg, max_deg):
     shape = mean.shape[:-1] + (-1,)
     scaled_mean = torch.reshape(mean[..., None, :] * scales[:, None], shape)
     scaled_var = torch.reshape(var[..., None, :] * scales[:, None] ** 2, shape)
-    return expected_sin(torch.concat([scaled_mean, scaled_mean + 0.5 * np.pi], dim=-1),
-                        torch.concat([scaled_var] * 2, dim=-1))
+    return expected_sin(torch.cat([scaled_mean, scaled_mean + 0.5 * np.pi], dim=-1),
+                        torch.cat([scaled_var] * 2, dim=-1))
 
 
 def offset_points_to_sphere(points):
@@ -739,7 +741,15 @@ class MCShadingNetwork(nn.Module):
         super().__init__()
 
         # material part
-        self.feats_network = MaterialFeatsNetwork()
+
+        # replace feats_network with neural_points
+        # self.feats_network = MaterialFeatsNetwork()
+
+        # Here
+        # neural points
+        # self.neural_points = NeuralPoints(self.cfg['point_features_dim'], 0, self.cfg , checkpoint=None, feature_init_method=self.cfg['feature_init_method'], reg_weight=0., feedforward=self.cfg['feedforward'])
+        # self.aggregator = PointAggregator(opt)
+
         self.metallic_predictor = make_predictor(256 + 3, 1)
         self.roughness_predictor = make_predictor(256 + 3, 1)
         self.albedo_predictor = make_predictor(256 + 3, 3)
@@ -943,12 +953,18 @@ class MCShadingNetwork(nn.Module):
         return 1.0 / (1.0 + fun(alpha_sq, NoV) + fun(alpha_sq, NoL))
 
     def predict_materials(self, pts):
-        feats = self.feats_network(pts)
-        metallic = self.metallic_predictor(torch.cat([feats, pts], -1))
-        roughness = self.roughness_predictor(torch.cat([feats, pts], -1))
+        # change to neural points
+        # Here
+        agg_feats = self.feats_network(pts)
+        # sampled_color, sampled_Rw2c, sampled_dir, sampled_conf, sampled_embedding, sampled_xyz_pers, sampled_xyz, sample_pnt_mask, sample_loc, sample_loc_w, sample_ray_dirs, ray_mask_tensor, vsize, grid_vox_sz = self.neural_points({"pixel_idx": pixel_idx, "camrotc2w": camrotc2w, "campos": campos, "near": near, "far": far,"focal": focal, "h": h, "w": w, "intrinsic": intrinsic,"gt_image":gt_image, "raydir":raydir})
+        # agg_feats, decoded_features, ray_valid, weight, conf_coefficient = self.aggregator(sampled_color, sampled_Rw2c, sampled_dir, sampled_conf, sampled_embedding, sampled_xyz_pers, sampled_xyz, sample_pnt_mask, sample_loc, sample_loc_w, sample_ray_dirs, vsize, grid_vox_sz)
+
+
+        metallic = self.metallic_predictor(torch.cat([agg_feats, pts], -1))
+        roughness = self.roughness_predictor(torch.cat([agg_feats, pts], -1))
         rmax, rmin = 1.0, 0.04 ** 2
         roughness = roughness * (rmax - rmin) + rmin
-        albedo = self.albedo_predictor(torch.cat([feats, pts], -1))
+        albedo = self.albedo_predictor(torch.cat([agg_feats, pts], -1))
         return metallic, roughness, albedo
 
     def distribution_ggx(self, NoH, roughness):

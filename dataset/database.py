@@ -237,6 +237,7 @@ class GlossySyntheticDatabase(BaseDatabase):
         _, model_name = database_name.split('/')
         RENDER_ROOT = dataset_dir
         self.root = f'{RENDER_ROOT}/{model_name}'
+        print(self.root)
         self.img_num = len(glob.glob(f'{self.root}/*.pkl'))
         self.img_ids = [str(k) for k in range(self.img_num)]
         self.cams = [read_pickle(f'{self.root}/{k}-camera.pkl') for k in range(self.img_num)]
