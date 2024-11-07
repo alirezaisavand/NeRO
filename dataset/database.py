@@ -436,6 +436,7 @@ class NeRFSyntheticDatabase(BaseDatabase):
             else:
                 skip = testskip
 
+
             for frame in meta['frames'][::skip]:
                 fname = os.path.join(self.root, frame['file_path'] + '.png')
                 imgs.append(imageio.imread(fname))

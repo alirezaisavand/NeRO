@@ -16,7 +16,26 @@ from network.metrics import name2metrics
 from train.train_tools import to_cuda, Logger
 from train.train_valid import ValidationEvaluator
 from utils.dataset_utils import dummy_collate_fn
+from NeRO.network.renderer import ConfigWrapper
+from pointnerf.data import create_dataset
 
+def get_latest_epoch(resume_dir):
+    os.makedirs(resume_dir, exist_ok=True)
+    str_epoch = [file.split("_")[0] for file in os.listdir(resume_dir) if file.endswith("_states.pth")]
+    int_epoch = [int(i) for i in str_epoch]
+    return None if len(int_epoch) == 0 else str_epoch[int_epoch.index(max(int_epoch))]
+
+def nearest_view(campos, raydir, xyz, id_list):
+
+    cam_ind = torch.zeros([0, 1], device=campos.device, dtype=torch.long)
+    step = 10000
+    for i in range(0, len(xyz), step):
+        dists = xyz[i:min(len(xyz), i + step), None, :] - campos[None, ...]  # N, M, 3
+        dists_norm = torch.norm(dists, dim=-1)  # N, M
+        dists_dir = dists / (dists_norm[..., None] + 1e-6)  # N, M, 3
+        dists = dists_norm / 200 + (1.1 - torch.sum(dists_dir * raydir[None, :], dim=-1))  # N, M
+        cam_ind = torch.cat([cam_ind, torch.argmin(dists, dim=1).view(-1, 1)], dim=0)  # N, 1
+    return cam_ind
 
 class Trainer:
     default_cfg = {
@@ -92,7 +111,10 @@ class Trainer:
 
     def __init__(self, cfg):
         self.cfg = {**self.default_cfg, **cfg}
-        self.opt = self.parse_opt(self.cfg)
+
+        # Here we set options
+        self.opt = ConfigWrapper(self.cfg)
+
         torch.manual_seed(self.cfg['random_seed'])
         np.random.seed(self.cfg['random_seed'])
         random.seed(self.cfg['random_seed'])
@@ -102,16 +124,208 @@ class Trainer:
         self.pth_fn = os.path.join(self.model_dir, 'model.pth')
         self.best_pth_fn = os.path.join(self.model_dir, 'model_best.pth')
 
+    # Here we use a function from pointnerf train_ft.py
+
+
+    # Here we load initial points embeddings
+    def load_init_points(self):
+
+        opt = self.opt
+        train_dataset = create_dataset(opt)
+        normRw2c = train_dataset.norm_w2c[:3, :3]
+        points_xyz_all = None
+
+        with torch.no_grad():
+            # if len([n for n in glob.glob(opt.checkpoints_dir + opt.name + "/*_net_ray_marching.pth") if
+            #         os.path.isfile(n)]) > 0:
+            #     if opt.bgmodel.endswith("plane"):
+            #         _, _, _, _, _, img_lst, c2ws_lst, w2cs_lst, intrinsics_all, HDWD_lst = gen_points_filter_embeddings(
+            #             train_dataset, visualizer, opt)
+            #
+            #     resume_dir = os.path.join(opt.checkpoints_dir, opt.name)
+            #     if opt.resume_iter == "best":
+            #         opt.resume_iter = "latest"
+            #     resume_iter = opt.resume_iter if opt.resume_iter != "latest" else get_latest_epoch(resume_dir)
+            #     if resume_iter is None:
+            #         epoch_count = 1
+            #         total_steps = 0
+            #         visualizer.print_details("No previous checkpoints, start from scratch!!!!")
+            #     else:
+            #         opt.resume_iter = resume_iter
+            #         states = torch.load(
+            #             os.path.join(resume_dir, '{}_states.pth'.format(resume_iter)), map_location=cur_device)
+            #         epoch_count = states['epoch_count']
+            #         total_steps = states['total_steps']
+            #         best_PSNR = states['best_PSNR'] if 'best_PSNR' in states else best_PSNR
+            #         best_iter = states['best_iter'] if 'best_iter' in states else best_iter
+            #         best_PSNR = best_PSNR.item() if torch.is_tensor(best_PSNR) else best_PSNR
+            #         visualizer.print_details('++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+            #         visualizer.print_details('Continue training from {} epoch'.format(opt.resume_iter))
+            #         visualizer.print_details(f"Iter: {total_steps}")
+            #         visualizer.print_details('++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+            #         del states
+            #     opt.mode = 2
+            #     opt.load_points = 1
+            #     opt.resume_dir = resume_dir
+            #     opt.resume_iter = resume_iter
+            #     opt.is_train = True
+            #     model = create_model(opt)
+            # elif opt.load_points < 1:
+            #     points_xyz_all, points_embedding_all, points_color_all, points_dir_all, points_conf_all, img_lst, c2ws_lst, w2cs_lst, intrinsics_all, HDWD_lst = gen_points_filter_embeddings(
+            #         train_dataset, visualizer, opt)
+            #     opt.resume_iter = opt.resume_iter if opt.resume_iter != "latest" else get_latest_epoch(opt.resume_dir)
+            #     opt.is_train = True
+            #     opt.mode = 2
+            #     model = create_model(opt)
+            if opt.load_points == 1:
+                load_points = opt.load_points
+                opt.is_train = False
+                opt.mode = 1
+                opt.load_points = 0
+                # model = create_model(opt)
+                # model.setup(opt)
+                # model.eval()
+                if load_points in [1, 3]:
+                    points_xyz_all = train_dataset.load_init_points()
+                # if load_points == 2:
+                #     points_xyz_all = train_dataset.load_init_depth_points(device="cuda", vox_res=100)
+                # if load_points == 3:
+                #     depth_xyz_all = train_dataset.load_init_depth_points(device="cuda", vox_res=80)
+                #     print("points_xyz_all", points_xyz_all.shape)
+                #     print("depth_xyz_all", depth_xyz_all.shape)
+                #     filter_res = 100
+                #     pc_grid_id, _, pc_space_min, pc_space_max = mvs_utils.construct_vox_points_ind(points_xyz_all,
+                #                                                                                    filter_res)
+                #     d_grid_id, depth_inds, _, _ = mvs_utils.construct_vox_points_ind(depth_xyz_all, filter_res,
+                #                                                                      space_min=pc_space_min,
+                #                                                                      space_max=pc_space_max)
+                #     all_grid = torch.cat([pc_grid_id, d_grid_id], dim=0)
+                #     min_id = torch.min(all_grid, dim=-2)[0]
+                #     max_id = torch.max(all_grid, dim=-2)[0] - min_id
+                #     max_id_lst = (max_id + 1).cpu().numpy().tolist()
+                #     mask = torch.ones(max_id_lst, device=d_grid_id.device)
+                #     pc_maskgrid_id = (pc_grid_id - min_id[None, ...]).to(torch.long)
+                #     mask[pc_maskgrid_id[..., 0], pc_maskgrid_id[..., 1], pc_maskgrid_id[..., 2]] = 0
+                #     depth_maskinds = (d_grid_id[depth_inds, :] - min_id).to(torch.long)
+                #     depth_maskinds = mask[depth_maskinds[..., 0], depth_maskinds[..., 1], depth_maskinds[..., 2]]
+                #     depth_xyz_all = depth_xyz_all[depth_maskinds > 0]
+                #     visualizer.save_neural_points("dep_filtered", depth_xyz_all, None, None, save_ref=False)
+                #     print("vis depth; after pc mask depth_xyz_all", depth_xyz_all.shape)
+                #     points_xyz_all = [points_xyz_all, depth_xyz_all] if opt.vox_res > 0 else torch.cat(
+                #         [points_xyz_all, depth_xyz_all], dim=0)
+                #     del depth_xyz_all, depth_maskinds, mask, pc_maskgrid_id, max_id_lst, max_id, min_id, all_grid
+
+                if opt.ranges[0] > -99.0:
+                    ranges = torch.as_tensor(opt.ranges, device=points_xyz_all.device, dtype=torch.float32)
+                    mask = torch.prod(
+                        torch.logical_and(points_xyz_all[..., :3] >= ranges[None, :3],
+                                          points_xyz_all[..., :3] <= ranges[None, 3:]),
+                        dim=-1) > 0
+                    points_xyz_all = points_xyz_all[mask]
+
+                # if opt.vox_res > 0:
+                #     points_xyz_all = [points_xyz_all] if not isinstance(points_xyz_all, list) else points_xyz_all
+                #     points_xyz_holder = torch.zeros([0, 3], dtype=points_xyz_all[0].dtype, device="cuda")
+                #     for i in range(len(points_xyz_all)):
+                #         points_xyz = points_xyz_all[i]
+                #         vox_res = opt.vox_res // (1.5 ** i)
+                #         print("load points_xyz", points_xyz.shape)
+                #         _, sparse_grid_idx, sampled_pnt_idx = mvs_utils.construct_vox_points_closest(
+                #             points_xyz.cuda() if len(points_xyz) < 80000000 else points_xyz[
+                #                                                                  ::(len(points_xyz) // 80000000 + 1),
+                #                                                                  ...].cuda(), vox_res)
+                #         points_xyz = points_xyz[sampled_pnt_idx, :]
+                #         print("after voxelize:", points_xyz.shape)
+                #         points_xyz_holder = torch.cat([points_xyz_holder, points_xyz], dim=0)
+                #     points_xyz_all = points_xyz_holder
+
+                # if opt.resample_pnts > 0:
+                #     if opt.resample_pnts == 1:
+                #         print("points_xyz_all", points_xyz_all.shape)
+                #         inds = torch.min(torch.norm(points_xyz_all, dim=-1, keepdim=True), dim=0)[
+                #             1]  # use the point closest to the origin
+                #     else:
+                #         inds = torch.randperm(len(points_xyz_all))[:opt.resample_pnts, ...]
+                #     points_xyz_all = points_xyz_all[inds, ...]
+
+                campos, camdir = train_dataset.get_campos_ray()
+                cam_ind = nearest_view(campos, camdir, points_xyz_all, train_dataset.id_list)
+                unique_cam_ind = torch.unique(cam_ind)
+                print("unique_cam_ind", unique_cam_ind.shape)
+                points_xyz_all = [points_xyz_all[cam_ind[:, 0] == unique_cam_ind[i], :] for i in
+                                  range(len(unique_cam_ind))]
+
+                featuredim = opt.point_features_dim
+                points_embedding_all = torch.zeros([1, 0, featuredim], device=unique_cam_ind.device,
+                                                   dtype=torch.float32)
+                points_color_all = torch.zeros([1, 0, 3], device=unique_cam_ind.device, dtype=torch.float32)
+                points_dir_all = torch.zeros([1, 0, 3], device=unique_cam_ind.device, dtype=torch.float32)
+                points_conf_all = torch.zeros([1, 0, 1], device=unique_cam_ind.device, dtype=torch.float32)
+                print("extract points embeding & colors", )
+                for i in tqdm(range(len(unique_cam_ind))):
+                    id = unique_cam_ind[i]
+                    batch = train_dataset.get_item(id, full_img=True)
+                    HDWD = [train_dataset.height, train_dataset.width]
+                    c2w = batch["c2w"][0].cuda()
+                    w2c = torch.inverse(c2w)
+                    intrinsic = batch["intrinsic"].cuda()
+                    # cam_xyz_all 252, 4
+                    cam_xyz_all = (torch.cat([points_xyz_all[i], torch.ones_like(points_xyz_all[i][..., -1:])],
+                                             dim=-1) @ w2c.transpose(0, 1))[..., :3]
+                    embedding, color, dir, conf = self.network.query_embedding(HDWD, cam_xyz_all[None, ...], None,
+                                                                        batch['images'].cuda(), c2w[None, None, ...],
+                                                                        w2c[None, None, ...], intrinsic[:, None, ...],
+                                                                        0, pointdir_w=True)
+                    conf = conf * opt.default_conf if opt.default_conf > 0 and opt.default_conf < 1.0 else conf
+                    points_embedding_all = torch.cat([points_embedding_all, embedding], dim=1)
+                    points_color_all = torch.cat([points_color_all, color], dim=1)
+                    points_dir_all = torch.cat([points_dir_all, dir], dim=1)
+                    points_conf_all = torch.cat([points_conf_all, conf], dim=1)
+                    # visualizer.save_neural_points(id, cam_xyz_all, color, batch, save_ref=True)
+                points_xyz_all = torch.cat(points_xyz_all, dim=0)
+                # visualizer.save_neural_points("init", points_xyz_all, points_color_all, None, save_ref=load_points == 0)
+                # print("vis")
+                # visualizer.save_neural_points("cam", campos, None, None, None)
+                # print("vis")
+                # exit()
+
+                opt.resume_iter = opt.resume_iter if opt.resume_iter != "latest" else get_latest_epoch(opt.resume_dir)
+                opt.is_train = True
+                opt.mode = 2
+                # model = create_model(opt)
+
+            if points_xyz_all is not None:
+                if opt.bgmodel.startswith("planepoints"):
+                    gen_pnts, gen_embedding, gen_dir, gen_color, gen_conf = train_dataset.get_plane_param_points()
+                    # visualizer.save_neural_points("pl", gen_pnts, gen_color, None, save_ref=False)
+                    # print("vis pl")
+                    points_xyz_all = torch.cat([points_xyz_all, gen_pnts], dim=0)
+                    points_embedding_all = torch.cat([points_embedding_all, gen_embedding], dim=1)
+                    points_color_all = torch.cat([points_color_all, gen_dir], dim=1)
+                    points_dir_all = torch.cat([points_dir_all, gen_color], dim=1)
+                    points_conf_all = torch.cat([points_conf_all, gen_conf], dim=1)
+                self.network.set_points(points_xyz_all.cuda(), points_embedding_all.cuda(),
+                                 points_color=points_color_all.cuda(),
+                                 points_dir=points_dir_all.cuda(), points_conf=points_conf_all.cuda(),
+                                 Rw2c=normRw2c.cuda() if opt.load_points < 1 and opt.normview != 3 else None)
+                epoch_count = 1
+                total_steps = 0
+                del points_xyz_all, points_embedding_all, points_color_all, points_dir_all, points_conf_all
+
     def run(self):
         self._init_dataset()
         self._init_network()
         self._init_logger()
+
 
         best_para, start_step = self._load_model()
         train_iter = iter(self.train_set)
 
         pbar = tqdm(total=self.cfg['total_step'], bar_format='{r_bar}')
         pbar.update(start_step)
+
+        # Here we load points embeddings
+        self.load_init_points()
 
         for step in range(start_step, self.cfg['total_step']):
             try:

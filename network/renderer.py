@@ -12,7 +12,7 @@ from network.field import SDFNetwork, SingleVarianceNetwork, NeRFNetwork, AppSha
     extract_geometry, sample_pdf, MCShadingNetwork
 from utils.base_utils import color_map_forward, downsample_gaussian_blur
 from utils.raw_utils import linear_to_srgb
-
+from pointnerf.models.mvs.mvs_points_model import MvsPointsModel
 # Here we import NeuralPoints
 from pointnerf.models.neural_points.neural_points import NeuralPoints
 
@@ -21,6 +21,11 @@ from tqdm import trange
 class ConfigWrapper:
     def __init__(self, config_dict):
         self.inverse = 0
+        self.depth_grid = 128
+        self.mvs_point_sampler = "gau_single_sampler"
+        self.bg_filtering = 0
+        self.comb_file = None
+        self.xyz_grad = 0
         # Set each key-value pair in the dictionary as an attribute
         for key, value in config_dict.items():
             setattr(self, key, value)
@@ -869,6 +874,7 @@ class NeROMaterialRenderer(nn.Module):
         self._init_geometry()
         self._init_dataset(is_train)
         self._init_shader()
+        self._init_mvs()
 
 
     def _init_geometry(self):
@@ -888,6 +894,11 @@ class NeROMaterialRenderer(nn.Module):
         opt.num_point = 100000
         self.device = torch.device('cuda:0')
         self.neural_points = NeuralPoints(opt.point_features_dim, opt.num_point, opt, self.device, checkpoint=checkpoint_path, feature_init_method=opt.feature_init_method, reg_weight=0., feedforward=opt.feedforward)
+
+    # Here todo: Implement the function
+    def _init_mvs(self):
+        opt = self.opt
+        self.net_mvs = MvsPointsModel(opt).to(self.device)
 
     def _init_dataset(self, is_train):
         # train/test split
@@ -912,6 +923,21 @@ class NeROMaterialRenderer(nn.Module):
     def _init_shader(self):
         self.cfg['shader_cfg']['is_real'] = self.cfg['database_name'].startswith('real')
         self.shader_network = MCShadingNetwork(self.cfg['shader_cfg'], lambda o, d: self.trace(o, d))
+
+    # Here we use query embedding from neural points volumetric model
+    def query_embedding(self, HDWD, cam_xyz, photometric_confidence, imgs, c2ws, w2cs, intrinsics, cam_vid, pointdir_w=True):
+        img_feats = self.net_mvs.get_image_features(imgs)
+        return self.net_mvs.query_embedding(HDWD, cam_xyz, photometric_confidence, img_feats, c2ws, w2cs, intrinsics, cam_vid, pointdir_w=pointdir_w)
+
+    # Here we use set points from neural points volumetric model
+    def set_points(self, points_xyz, points_embedding, points_color=None, points_dir=None, points_conf=None, Rw2c=None, eulers=None, editing=False):
+        if not editing:
+            self.neural_points.set_points(points_xyz, points_embedding, points_color=points_color, points_dir=points_dir, points_conf=points_conf, parameter=self.opt.feedforward == 0, Rw2c=Rw2c, eulers=eulers)
+        else:
+            self.neural_points.editing_set_points(points_xyz, points_embedding, points_color=points_color, points_dir=points_dir, points_conf=points_conf, parameter=self.opt.feedforward == 0, Rw2c=Rw2c, eulers=eulers)
+        # if self.opt.feedforward == 0 and self.opt.is_train:
+        #     self.setup_optimizer(self.opt)
+
 
     def trace_in_batch(self, rays_o, rays_d, batch_size=1024 ** 2, cpu=False):
         inters, normals, depth, hit_mask = [], [], [], []

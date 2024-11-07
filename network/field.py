@@ -743,7 +743,7 @@ class MCShadingNetwork(nn.Module):
         # material part
 
         # replace feats_network with neural_points
-        # self.feats_network = MaterialFeatsNetwork()
+        self.feats_network = MaterialFeatsNetwork()
 
         # Here
         # neural points
