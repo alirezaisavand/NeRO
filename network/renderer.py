@@ -886,6 +886,8 @@ class NeROMaterialRenderer(nn.Module):
         self.opt.cloud_path = "/home/NeRO/data/point_cloud.ply" # Change it to specidied path
         open3d.io.write_point_cloud(self.opt.cloud_path, self.point_cloud)
 
+        # initialize K-D tree for queries
+        self.kdtree = open3d.geometry.KDTreeFlann(self.point_cloud)
         opt = self.opt
         import os
         # checkpoint_path = os.path.join(opt.checkpoints_dir, opt.name, '{}_net_ray_marching.pth'.format(opt.resume_iter))
@@ -1106,7 +1108,7 @@ class NeROMaterialRenderer(nn.Module):
             self.train_batch[k] = v[shuffle_idxs]
 
     def shade(self, pts, view_dirs, normals, human_poses, is_train, step=None):
-        rgb_pr, outputs = self.shader_network(pts, view_dirs, normals, human_poses, step, is_train)
+        rgb_pr, outputs = self.shader_network(self.kdtree, self.neural_points, self.point_cloud, pts, view_dirs, normals, human_poses, step, is_train)
         outputs['rgb_pr'] = rgb_pr
         return outputs
 
@@ -1139,6 +1141,7 @@ class NeROMaterialRenderer(nn.Module):
         shade_outputs['loss_rgb'] = self.compute_rgb_loss(shade_outputs['rgb_pr'], shade_outputs['rgb_gt'])
         if self.cfg['reg_mat']:
             shade_outputs['loss_mat_reg'] = self.shader_network.material_regularization(
+                self.kdtree, self.neural_points, self.point_cloud,
                 pts, normals, shade_outputs['metallic'], shade_outputs['roughness'], shade_outputs['albedo'], step)
         if self.cfg['reg_diffuse_light']:
             shade_outputs['loss_diffuse_light'] = self.compute_diffuse_light_regularization(

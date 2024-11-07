@@ -310,7 +310,11 @@ class Trainer:
                                  Rw2c=normRw2c.cuda() if opt.load_points < 1 and opt.normview != 3 else None)
                 epoch_count = 1
                 total_steps = 0
+                print(points_embedding_all)
+
+                print(points_embedding_all.shape)
                 del points_xyz_all, points_embedding_all, points_color_all, points_dir_all, points_conf_all
+
 
     def run(self):
         self._init_dataset()
