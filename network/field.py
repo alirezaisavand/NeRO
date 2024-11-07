@@ -952,7 +952,7 @@ class MCShadingNetwork(nn.Module):
         alpha_sq = roughness ** 2
         return 1.0 / (1.0 + fun(alpha_sq, NoV) + fun(alpha_sq, NoL))
 
-    def get_k_nearest_embeddings(self, pts, kdtree, k, points_embedding):
+    def get_k_nearest_embeddings(self, pts, kdtree, k, neural_points):
         """
         For each point in pts, find its k-nearest neighbors in the kdtree and
         return their embeddings from points_embedding.
@@ -973,6 +973,10 @@ class MCShadingNetwork(nn.Module):
 
         # Initialize a list to store embeddings
         all_embeddings = []
+        all_colors = []
+        all_confs = []
+        all_xyz = []
+        all_dir = []
 
         # Loop over each query point in pts
         for query_point in pts_np:
@@ -980,15 +984,22 @@ class MCShadingNetwork(nn.Module):
             [k, idx, _] = kdtree.search_knn_vector_3d(query_point, k)
 
             # Retrieve embeddings of the neighbors
-            neighbor_embeddings = points_embedding[idx]
-
+            neighbor_embeddings = neural_points.points_embedding[0][idx]
+            neighbor_colors = neural_points.points_color
+            neighbor_confs = neural_points.points_conf
+            neighbor_xyz = neural_points.xyz
+            neighbor_dir = neural_points.points_dir
             # Append the embeddings to the list
             all_embeddings.append(neighbor_embeddings)
+            all_colors.append(neighbor_colors)
+            all_confs.append(neighbor_confs)
+            all_xyz.append(neighbor_xyz)
+            all_dir.append(neighbor_dir)
 
         # Convert the list of embeddings to a tensor of shape (M, k, E)
         all_embeddings_tensor = torch.stack([embedding for embedding in all_embeddings])
 
-        return all_embeddings_tensor
+        return all_embeddings_tensor, all_colors, all_confs, all_xyz, all_dir
 
     def predict_materials(self, kdtree, neural_points, point_cloud, pts):
         # change to neural points
@@ -996,7 +1007,7 @@ class MCShadingNetwork(nn.Module):
         agg_feats = self.feats_network(pts)
         self.k = 8
         print('neural points embedding shape:', neural_points.points_embeding.shape)
-        embeddings = self.get_k_nearest_embeddings(pts, kdtree, self.k, neural_points.points_embeding[0])
+        embeddings, colors, confs, xyzs, dirs = self.get_k_nearest_embeddings(pts, kdtree, self.k, neural_points.points_embeding[0])
         print('embedding shape:', embeddings.shape)
 
 

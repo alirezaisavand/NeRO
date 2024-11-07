@@ -15,7 +15,7 @@ from utils.raw_utils import linear_to_srgb
 from pointnerf.models.mvs.mvs_points_model import MvsPointsModel
 # Here we import NeuralPoints
 from pointnerf.models.neural_points.neural_points import NeuralPoints
-
+from pointnerf.models.aggregators.point_aggregators import PointAggregator
 from tqdm import trange
 
 class ConfigWrapper:
@@ -26,6 +26,8 @@ class ConfigWrapper:
         self.bg_filtering = 0
         self.comb_file = None
         self.xyz_grad = 0
+        self.point_hyper_dim = 256
+        self.view_ori = 0
         # Set each key-value pair in the dictionary as an attribute
         for key, value in config_dict.items():
             setattr(self, key, value)
@@ -896,7 +898,7 @@ class NeROMaterialRenderer(nn.Module):
         opt.num_point = 100000
         self.device = torch.device('cuda:0')
         self.neural_points = NeuralPoints(opt.point_features_dim, opt.num_point, opt, self.device, checkpoint=checkpoint_path, feature_init_method=opt.feature_init_method, reg_weight=0., feedforward=opt.feedforward)
-
+        self.aggregator = PointAggregator(opt)
     # Here todo: Implement the function
     def _init_mvs(self):
         opt = self.opt
