@@ -419,6 +419,8 @@ class NeRFSyntheticDatabase(BaseDatabase):
         self.root = f'{RENDER_ROOT}/{model_name}'
         self.scale_factor = 1.0
 
+        self.near_far = np.array([2.0, 6.0])
+
         # Here we define the blender2opencv matrix
         self.blender2opencv = np.array([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]])
 
@@ -437,7 +439,7 @@ class NeRFSyntheticDatabase(BaseDatabase):
         all_intrinsics = []
         all_cam2worlds = []
         all_world2cams = []
-        all_id_list = {}
+        self.id_list = {}
         for s in splits:
             meta = metas[s]
             imgs = []
@@ -453,21 +455,40 @@ class NeRFSyntheticDatabase(BaseDatabase):
                 imgs.append(imageio.imread(fname))
                 poses.append(np.array(frame['transform_matrix']))
             imgs = (np.array(imgs) / 255.).astype(np.float32)  # keep all 4 channels (RGBA)
+
+            # Here we load the camera intrinsics and poses
+            self.H, self.W = imgs[0].shape[:2]
+            H, W = self.H, self.W
+            camera_angle_x = float(meta['camera_angle_x'])
+            focal = .5 * W / np.tan(.5 * camera_angle_x)
+            self.focal = focal
+            self.Ks = np.array([
+                [focal, 0, 0.5 * W],
+                [0, focal, 0.5 * H],
+                [0, 0, 1]
+            ])
+
             poses = np.array(poses).astype(np.float32)
             counts.append(counts[-1] + imgs.shape[0])
             all_imgs.append(imgs)
             all_poses.append(poses)
 
+            for i, frame in enumerate(meta['frames'][::skip]):
+                fname = os.path.join(self.root, frame['file_path'] + '.png')
+                proj_mat, intrinsic, world2cam, cam2world = self.build_proj_mat(meta, i, norm_w2c=None, norm_c2w=None)
+                all_proj_mats.append(proj_mat)
+                all_intrinsics.append(intrinsic)
+                all_cam2worlds.append(cam2world)
             # Here
             proj_mats, intrinsics, world2cams, cam2worlds = self.build_proj_mats(split=s, norm_w2c=None,
                                                                                                         norm_c2w=None)
-            id_list = [i for i in range(len(self.metas[s]["frames"]))]
 
             all_proj_mats.append(proj_mats)
             all_world2cams.append(world2cams)
             all_cam2worlds.append(cam2worlds)
             all_intrinsics.append(intrinsics)
-            all_id_list[s] = id_list
+
+
 
 
         i_split = [np.arange(counts[i], counts[i + 1]) for i in range(2)]
@@ -477,62 +498,37 @@ class NeRFSyntheticDatabase(BaseDatabase):
         self.poses[..., :3, 3] /= 2
 
         # Here
-        self.proj_mats = np.concatenate(np.array(all_proj_mats), 0)
-        self.intrinsics = np.concatenate(all_intrinsics, 0)
-        self.world2cams = np.concatenate(all_world2cams, 0)
-        self.cam2worlds = np.concatenate(all_cam2worlds, 0)
+        self.proj_mats = np.array(self.stack(all_proj_mats))
+        self.intrinsics = np.array(all_intrinsics)
+        self.world2cams = np.array(all_world2cams)
+        self.cam2worlds = np.array(all_cam2worlds)
         # self.id_list = np.concatenate(np.array(all_id_list), 0)
-        self.id_list = all_id_list
+
 
         self.img_num = self.imgs.shape[0]
         self.img_ids = [str(k) for k in range(self.img_num)]
+        train_ids, test_ids = get_database_split(self, 'validation')
+        self.id_list = {'train': train_ids, 'test': test_ids}
 
-        self.H, self.W = self.imgs[0].shape[:2]
-        H, W = self.H, self.W
-
-        camera_angle_x = float(meta['camera_angle_x'])
-        focal = .5 * W / np.tan(.5 * camera_angle_x)
-        self.Ks = np.array([
-            [focal, 0, 0.5 * W],
-            [0, focal, 0.5 * H],
-            [0, 0, 1]
-        ])
-
-        # Here we load the camera intrinsics and poses
-
-
-    # Here we build projection matrices using function from pointnerf nerf_synth360_ft_dataset.py
-    def build_proj_mats(self, split='train', list=None, norm_w2c=None, norm_c2w=None):
-        proj_mats, intrinsics, world2cams, cam2worlds = [], [], [], []
-        a = 2 / 0
-        list = self.id_list[split] if list is None else list
-        # meta = self.meta if meta is None else meta
-        meta = self.metas[split]
+    def build_proj_mat(self, meta, vid, norm_w2c=None, norm_c2w=None):
+        # Here we har
         focal = 0.5 * 800 / np.tan(0.5 * meta['camera_angle_x'])  # original focal length
         focal *= self.W / 800  # modify focal length to match size self.img_wh
-        self.focal = focal
-        self.near_far = np.array([2.0, 6.0])
-        for vid in list:
-            frame = meta['frames'][vid]
-            c2w = np.array(frame['transform_matrix']) @ self.blender2opencv
-            if norm_w2c is not None:
-                c2w = norm_w2c @ c2w
-            w2c = np.linalg.inv(c2w)
-            cam2worlds.append(c2w)
-            world2cams.append(w2c)
+        frame = meta['frames'][vid]
+        c2w = np.array(frame['transform_matrix']) @ self.blender2opencv
+        if norm_w2c is not None:
+            c2w = norm_w2c @ c2w
+        w2c = np.linalg.inv(c2w)
 
-            intrinsic = np.array([[focal, 0, self.W / 2], [0, focal, self.H / 2], [0, 0, 1]])
-            intrinsics.append(intrinsic.copy().astype(np.float32))
+        intrinsic = np.array([[focal, 0, self.W / 2], [0, focal, self.H / 2], [0, 0, 1]])
 
-            # multiply intrinsics and extrinsics to get projection matrix
-            proj_mat_l = np.eye(4)
-            intrinsic[:2] = intrinsic[:2] / 4
-            proj_mat_l[:3, :4] = intrinsic @ w2c[:3, :4]
-            proj_mats += [(proj_mat_l, self.near_far)]
-        proj_mats = self.stack(proj_mats)
-        intrinsics = np.stack(intrinsics)
-        world2cams, cam2worlds = np.stack(world2cams), np.stack(cam2worlds)
-        return proj_mats, intrinsics, world2cams, cam2worlds
+        # multiply intrinsics and extrinsics to get projection matrix
+        proj_mat_l = np.eye(4)
+        intrinsic[:2] = intrinsic[:2] / 4
+        proj_mat_l[:3, :4] = intrinsic @ w2c[:3, :4]
+
+        proj_mat = (proj_mat_l, self.near_far)
+        return proj_mat, intrinsic, w2c, c2w
 
     # Here we stack the projection matrices using stack in nerf_synth360_ft_dataset.py
     def stack(self, matrix):

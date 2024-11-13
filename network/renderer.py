@@ -259,11 +259,7 @@ class NeROShapeRenderer(nn.Module):
         imgs = imgs_info['imgs'].permute(0, 2, 3, 1).reshape(imn, h * w, 3)  # imn,h*w,3
         idxs = torch.arange(imn, dtype=torch.int64, device=device)[:, None, None].repeat(1, h * w, 1)  # imn,h*w,1
         poses = imgs_info['poses']  # imn,3,4
-        intrinsics = imgs_info['intrinsics']
-        proj_mats = imgs_info['proj_mats']
-        world2cams = imgs_info['world2cams']
-        cam2worlds = imgs_info['cam2worlds']
-        id_list = imgs_info['id_list']
+
 
         if is_train:
             masks = imgs_info['masks'].reshape(imn, h * w)
