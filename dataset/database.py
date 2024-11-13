@@ -474,21 +474,10 @@ class NeRFSyntheticDatabase(BaseDatabase):
             all_poses.append(poses)
 
             for i, frame in enumerate(meta['frames'][::skip]):
-                fname = os.path.join(self.root, frame['file_path'] + '.png')
                 proj_mat, intrinsic, world2cam, cam2world = self.build_proj_mat(meta, i, norm_w2c=None, norm_c2w=None)
                 all_proj_mats.append(proj_mat)
                 all_intrinsics.append(intrinsic)
                 all_cam2worlds.append(cam2world)
-            # Here
-            proj_mats, intrinsics, world2cams, cam2worlds = self.build_proj_mats(split=s, norm_w2c=None,
-                                                                                                        norm_c2w=None)
-
-            all_proj_mats.append(proj_mats)
-            all_world2cams.append(world2cams)
-            all_cam2worlds.append(cam2worlds)
-            all_intrinsics.append(intrinsics)
-
-
 
 
         i_split = [np.arange(counts[i], counts[i + 1]) for i in range(2)]
@@ -498,7 +487,7 @@ class NeRFSyntheticDatabase(BaseDatabase):
         self.poses[..., :3, 3] /= 2
 
         # Here
-        self.proj_mats = np.array(self.stack(all_proj_mats))
+        self.proj_mats = self.stack(all_proj_mats)
         self.intrinsics = np.array(all_intrinsics)
         self.world2cams = np.array(all_world2cams)
         self.cam2worlds = np.array(all_cam2worlds)

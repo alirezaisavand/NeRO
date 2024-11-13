@@ -1003,6 +1003,14 @@ class MCShadingNetwork(nn.Module):
 
         return all_embeddings_tensor, all_colors, all_confs, all_xyz, all_dir
 
+    def w2pers(self, point_xyz, camrotc2w, campos):
+        point_xyz_shift = point_xyz[None, ...] - campos[:, None, :]
+        xyz = torch.sum(camrotc2w[:, None, :, :] * point_xyz_shift[:, :, :, None], dim=-2)
+        # print(xyz.shape, (point_xyz_shift[:, None, :] * camrot.T).shape)
+        xper = xyz[:, :, 0] / xyz[:, :, 2]
+        yper = xyz[:, :, 1] / xyz[:, :, 2]
+        return torch.stack([xper, yper, xyz[:, :, 2]], dim=-1)
+
     def predict_materials(self, aggregator, kdtree, neural_points, point_cloud, pts,
                           intrinsic, proj_mats, world2cams, cam2worlds):
         # change to neural points
@@ -1024,21 +1032,20 @@ class MCShadingNetwork(nn.Module):
                                                                                                                  self.k,
                                                                                                                  neural_points.points_embeding[
                                                                                                                      0])
-
-
-        color_in, decoded_features, ray_valid, weight, conf_coefficient = aggregator(sampled_color, sampled_Rw2c, sampled_dir, sampled_conf, sampled_embedding, sampled_xyz_pers, sampled_xyz, sample_pnt_mask, sample_loc, sample_loc_w, sample_ray_dirs, vsize, grid_vox_sz)
-
+        sampled_xyz_pers = self.w2pers(self.xyz, camrotc2w, campos)
 
         print('neural points embedding shape:', neural_points.points_embeding.shape)
-        print('embedding shape:', embeddings.shape)
+        print('embedding shape:', sampled_embedding.shape)
 
 
         print('points shape:', pts.shape)
-
+        sample_loc_w_tensor = pts
         # sampled_color, sampled_Rw2c, sampled_dir, sampled_conf, sampled_embedding, sampled_xyz_pers, sampled_xyz, sample_pnt_mask, sample_loc, sample_loc_w, sample_ray_dirs, ray_mask_tensor, vsize, grid_vox_sz = self.neural_points({"pixel_idx": pixel_idx, "camrotc2w": camrotc2w, "campos": campos, "near": near, "far": far,"focal": focal, "h": h, "w": w, "intrinsic": intrinsic,"gt_image":gt_image, "raydir":raydir})
+        # decoded_features, ray_valid, weight, conf_coefficient = self.aggregator(sampled_color, sampled_Rw2c, sampled_dir, sampled_conf, sampled_embedding, sampled_xyz_pers, sampled_xyz, sample_pnt_mask, sample_loc, sample_loc_w, sample_ray_dirs, vsize, grid_vox_sz)
+        self.w2pers(sample_loc_w_tensor, camrotc2w, campos)
         sampled_Rw2c = neural_points.Rw2c
 
-        color_in, decoded_features, ray_valid, weight, conf_coefficient = self.aggregator(sampled_color, sampled_Rw2c, sampled_dir, sampled_conf, sampled_embedding, None, sampled_xyz, None, None, None, None, None, None)
+        color_in, decoded_features, ray_valid, weight, conf_coefficient = aggregator(sampled_color, sampled_Rw2c, sampled_dir, sampled_conf, sampled_embedding, sampled_xyz_pers, sampled_xyz, None, sample_loc, sample_loc_w, None, None, None)
 
 
 
