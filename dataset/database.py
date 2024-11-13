@@ -491,7 +491,8 @@ class NeRFSyntheticDatabase(BaseDatabase):
         self.intrinsics = np.array(all_intrinsics)
         self.world2cams = np.array(all_world2cams)
         self.cam2worlds = np.array(all_cam2worlds)
-        print('cam2worlds:', self.cam2worlds)
+        print('world2cams:', self.world2cams)
+        print('index 0:', self.world2cams[0])
         # self.id_list = np.concatenate(np.array(all_id_list), 0)
 
 
