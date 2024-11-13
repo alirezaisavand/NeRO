@@ -482,7 +482,7 @@ class NeRFSyntheticDatabase(BaseDatabase):
         self.world2cams = np.concatenate(all_world2cams, 0)
         self.cam2worlds = np.concatenate(all_cam2worlds, 0)
         # self.id_list = np.concatenate(np.array(all_id_list), 0)
-
+        self.id_list = all_id_list
 
         self.img_num = self.imgs.shape[0]
         self.img_ids = [str(k) for k in range(self.img_num)]
