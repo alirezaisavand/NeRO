@@ -504,6 +504,7 @@ class NeRFSyntheticDatabase(BaseDatabase):
     # Here we build projection matrices using function from pointnerf nerf_synth360_ft_dataset.py
     def build_proj_mats(self, split='train', list=None, norm_w2c=None, norm_c2w=None):
         proj_mats, intrinsics, world2cams, cam2worlds = [], [], [], []
+        a = 2 / 0
         list = self.id_list[split] if list is None else list
         # meta = self.meta if meta is None else meta
         meta = self.metas[split]
