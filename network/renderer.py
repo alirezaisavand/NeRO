@@ -36,9 +36,18 @@ class ConfigWrapper:
 
 
 def build_imgs_info(database: BaseDatabase, img_ids, is_nerf=False):
+
     images = [database.get_image(img_id) for img_id in img_ids]
     poses = [database.get_pose(img_id) for img_id in img_ids]
     Ks = [database.get_K(img_id) for img_id in img_ids]
+
+    # Here we add extra information we need for point embeddings
+    proj_mats = [database.get_proj_mat(img_id) for img_id in img_ids]
+    intrinsics = [database.get_intrinsic(img_id) for img_id in img_ids]
+
+    world2cams=  [database.get_world2cam(img_id) for img_id in img_ids]
+    cam2worlds = [database.get_cam2world(img_id) for img_id in img_ids]
+    id_list = img_ids
 
     images = np.stack(images, 0)
     if is_nerf:
@@ -53,6 +62,11 @@ def build_imgs_info(database: BaseDatabase, img_ids, is_nerf=False):
         'imgs': images,
         'Ks': Ks,
         'poses': poses,
+        'intrinsics': intrinsics,
+        'proj_mats': proj_mats,
+        'world2cams': world2cams,
+        'cam2worlds': cam2worlds,
+        'id_list': id_list
     }
 
     if is_nerf:
@@ -245,6 +259,12 @@ class NeROShapeRenderer(nn.Module):
         imgs = imgs_info['imgs'].permute(0, 2, 3, 1).reshape(imn, h * w, 3)  # imn,h*w,3
         idxs = torch.arange(imn, dtype=torch.int64, device=device)[:, None, None].repeat(1, h * w, 1)  # imn,h*w,1
         poses = imgs_info['poses']  # imn,3,4
+        intrinsics = imgs_info['intrinsics']
+        proj_mats = imgs_info['proj_mats']
+        world2cams = imgs_info['world2cams']
+        cam2worlds = imgs_info['cam2worlds']
+        id_list = imgs_info['id_list']
+
         if is_train:
             masks = imgs_info['masks'].reshape(imn, h * w)
 
@@ -1024,6 +1044,8 @@ class NeROMaterialRenderer(nn.Module):
         human_poses = human_poses.unsqueeze(1).repeat(1, h * w, 1, 1)  # imn,h*w,3,4
         rgb = imgs_info['imgs'].reshape(imn, 3, h * w).permute(0, 2, 1)  # imn,h*w,3
 
+
+
         if is_train:
             ray_batch = {
                 'rays_o': rays_o[hit_mask].to(device),
@@ -1075,6 +1097,19 @@ class NeROMaterialRenderer(nn.Module):
             imn, h * w, 1), hit_mask.reshape(imn, h * w)
         poses = poses.unsqueeze(1).repeat(1, h * w, 1, 1)
 
+        # Here we add transformation matrices for each pixel
+        intrinsics = imgs_info['intrinsics']  # Shape: (imn, 3, 3)
+        intrinsics_expanded = intrinsics.unsqueeze(1).repeat(1, h * w, 1, 1)  # Shape: (imn, h * w, 3, 3)
+
+        proj_mats = imgs_info['proj_mats']  # Shape: (imn, 4, 4)
+        proj_mats_expanded = proj_mats.unsqueeze(1).repeat(1, h * w, 1, 1)  # Shape: (imn, h * w, 4, 4)
+
+        world2cams = imgs_info['world2cams']  # Shape: (imn, 4, 4)
+        world2cams_expanded = world2cams.unsqueeze(1).repeat(1, h * w, 1, 1)  # Shape: (imn, h * w, 4, 4)
+
+        cam2worlds = imgs_info['cam2worlds']  # Shape: (imn, 4, 4)
+        cam2worlds_expanded = cam2worlds.unsqueeze(1).repeat(1, h * w, 1, 1)  # Shape: (imn, h * w, 4, 4)
+
         if is_train:
             ray_batch = {
                 'rays_o': rays_o[hit_mask].to(device),
@@ -1084,6 +1119,10 @@ class NeROMaterialRenderer(nn.Module):
                 'depth': depth[hit_mask].to(device),
                 'human_poses': poses[hit_mask].to(device),
                 'rgb': imgs[hit_mask].to(device),
+                'intrinsics': intrinsics_expanded[hit_mask].to(device),
+                'proj_mats': proj_mats_expanded[hit_mask].to(device),
+                'world2cams': world2cams_expanded[hit_mask].to(device),
+                'cam2worlds': cam2worlds_expanded[hit_mask].to(device),
                 # 'dirs': dirs.float().reshape(rn, 3).to(device),
             }
         else:
@@ -1097,6 +1136,10 @@ class NeROMaterialRenderer(nn.Module):
                 'human_poses': poses[0].to(device),
                 'rgb': imgs[0].to(device),
                 'hit_mask': hit_mask[0].to(device),
+                'intrinsics': intrinsics_expanded[0].to(device),
+                'proj_mats': proj_mats_expanded[0].to(device),
+                'world2cams': world2cams_expanded[0].to(device),
+                'cam2worlds': cam2worlds_expanded[0].to(device),
             }
 
         return ray_batch
@@ -1109,8 +1152,9 @@ class NeROMaterialRenderer(nn.Module):
         for k, v in self.train_batch.items():
             self.train_batch[k] = v[shuffle_idxs]
 
-    def shade(self, pts, view_dirs, normals, human_poses, is_train, step=None):
-        rgb_pr, outputs = self.shader_network(self.kdtree, self.neural_points, self.point_cloud, pts, view_dirs, normals, human_poses, step, is_train)
+    def shade(self, pts, view_dirs, normals, human_poses, is_train, step=None, intrinsics=None, proj_mats=None, world2cams=None, cam2worlds=None):
+        rgb_pr, outputs = self.shader_network(self.aggregator, self.kdtree, self.neural_points, self.point_cloud, pts, view_dirs, normals, human_poses, step, is_train,
+                                              intrinsics, proj_mats, world2cams, cam2worlds)
         outputs['rgb_pr'] = rgb_pr
         return outputs
 
@@ -1138,13 +1182,21 @@ class NeROMaterialRenderer(nn.Module):
         rgb_gt = self.train_batch['rgb'][self.train_batch_i:self.train_batch_i + rn].cuda()
         human_poses = self.train_batch['human_poses'][self.train_batch_i:self.train_batch_i + rn].cuda()
 
-        shade_outputs = self.shade(pts, view_dirs, normals, human_poses, True, step)
+        # Here we get additional parameters for neural points
+        intrinsics = self.train_batch['intrinsics'][self.train_batch_i:self.train_batch_i + rn].cuda()
+        proj_mats = self.train_batch['proj_mats'][self.train_batch_i:self.train_batch_i + rn].cuda()
+        world2cams = self.train_batch['world2cams'][self.train_batch_i:self.train_batch_i + rn].cuda()
+        cam2worlds = self.train_batch['cam2worlds'][self.train_batch_i:self.train_batch_i + rn].cuda()
+
+
+        shade_outputs = self.shade(pts, view_dirs, normals, human_poses, True, step, intrinsics, proj_mats, world2cams, cam2worlds)
         shade_outputs['rgb_gt'] = rgb_gt
         shade_outputs['loss_rgb'] = self.compute_rgb_loss(shade_outputs['rgb_pr'], shade_outputs['rgb_gt'])
         if self.cfg['reg_mat']:
             shade_outputs['loss_mat_reg'] = self.shader_network.material_regularization(
-                self.kdtree, self.neural_points, self.point_cloud,
-                pts, normals, shade_outputs['metallic'], shade_outputs['roughness'], shade_outputs['albedo'], step)
+                self.aggregator, self.kdtree, self.neural_points, self.point_cloud,
+                pts, normals, shade_outputs['metallic'], shade_outputs['roughness'], shade_outputs['albedo'], step,
+                intrinsics, proj_mats, world2cams, cam2worlds)
         if self.cfg['reg_diffuse_light']:
             shade_outputs['loss_diffuse_light'] = self.compute_diffuse_light_regularization(
                 shade_outputs['diffuse_light'])
@@ -1175,7 +1227,13 @@ class NeROMaterialRenderer(nn.Module):
                 rgb_gt = ray_batch['rgb'][ri:ri + trn][hit_mask]
                 human_poses = ray_batch['human_poses'][ri:ri + trn][hit_mask]
 
-                shade_outputs = self.shade(pts, view_dirs, normals, human_poses, False)
+                # Here we get additional parameters for neural points from batch
+                intrinsics = ray_batch['intrinsics'][ri:ri + trn][hit_mask]
+                proj_mats = ray_batch['proj_mats'][ri:ri + trn][hit_mask]
+                world2cams = ray_batch['world2cams'][ri:ri + trn][hit_mask]
+                cam2worlds = ray_batch['cam2worlds'][ri:ri + trn][hit_mask]
+
+                shade_outputs = self.shade(pts, view_dirs, normals, human_poses, False, intrinsics, proj_mats, world2cams, cam2worlds)
 
                 outputs_cur['rgb_pr'][hit_mask] = shade_outputs['rgb_pr']
                 outputs_cur['rgb_gt'][hit_mask] = rgb_gt
@@ -1210,11 +1268,13 @@ class NeROMaterialRenderer(nn.Module):
         torch.set_default_tensor_type('torch.FloatTensor')
         return outputs
 
+
     def predict_materials(self, batch_size=8192):
         verts = torch.from_numpy(np.asarray(self.mesh.vertices, np.float32)).cuda().float()
         metallic, roughness, albedo = [], [], []
         for vi in range(0, verts.shape[0], batch_size):
-            m, r, a = self.shader_network.predict_materials(verts[vi:vi + batch_size])
+            # Here I don't know what should I do to pass the required parameters
+            m, r, a = self.shader_network.predict_materials(self.aggregator, self.kdtree, self.neural_points, self.point_cloud, verts[vi:vi + batch_size])
             r = torch.sqrt(torch.clamp(r, min=1e-7))  # note: we assume predictions are squared roughness!!!
             metallic.append(m.cpu().numpy())
             roughness.append(r.cpu().numpy())
