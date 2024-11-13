@@ -491,6 +491,7 @@ class NeRFSyntheticDatabase(BaseDatabase):
         self.intrinsics = np.array(all_intrinsics)
         self.world2cams = np.array(all_world2cams)
         self.cam2worlds = np.array(all_cam2worlds)
+        print('cam2worlds:', self.cam2worlds)
         # self.id_list = np.concatenate(np.array(all_id_list), 0)
 
 
@@ -508,7 +509,7 @@ class NeRFSyntheticDatabase(BaseDatabase):
         if norm_w2c is not None:
             c2w = norm_w2c @ c2w
         w2c = np.linalg.inv(c2w)
-
+        print('w2c:', w2c)
         intrinsic = np.array([[focal, 0, self.W / 2], [0, focal, self.H / 2], [0, 0, 1]])
 
         # multiply intrinsics and extrinsics to get projection matrix
