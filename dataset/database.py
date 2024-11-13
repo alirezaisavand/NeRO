@@ -437,7 +437,7 @@ class NeRFSyntheticDatabase(BaseDatabase):
         all_intrinsics = []
         all_cam2worlds = []
         all_world2cams = []
-        all_id_list = []
+        all_id_list = {}
         for s in splits:
             meta = metas[s]
             imgs = []
@@ -467,7 +467,7 @@ class NeRFSyntheticDatabase(BaseDatabase):
             all_world2cams.append(world2cams)
             all_cam2worlds.append(cam2worlds)
             all_intrinsics.append(intrinsics)
-            all_id_list.append(id_list)
+            all_id_list[s] = id_list
 
 
         i_split = [np.arange(counts[i], counts[i + 1]) for i in range(2)]
@@ -481,7 +481,7 @@ class NeRFSyntheticDatabase(BaseDatabase):
         self.intrinsics = np.concatenate(all_intrinsics, 0)
         self.world2cams = np.concatenate(all_world2cams, 0)
         self.cam2worlds = np.concatenate(all_cam2worlds, 0)
-        self.id_list = np.concatenate(np.array(all_id_list), 0)
+        # self.id_list = np.concatenate(np.array(all_id_list), 0)
 
 
         self.img_num = self.imgs.shape[0]
