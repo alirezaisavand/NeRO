@@ -1049,7 +1049,7 @@ class MCShadingNetwork(nn.Module):
         sample_loc = None
         sampled_Rw2c = neural_points.Rw2c
         sample_pnt_mask = torch.ones_like(sampled_embedding[:, :, 0], dtype=torch.bool)
-        print('sample conf shape:', sampled_color.unsqueeze(0).unsqueeze(2).shape, 'expected:', 'B x valid R x SR x K x 1')
+        print('sample conf shape:', sampled_conf.unsqueeze(0).unsqueeze(2).shape, 'expected:', 'B x valid R x SR x K x 1')
         print('sample embedding shape:', sampled_embedding.unsqueeze(0).unsqueeze(2).shape, 'expected:', 'B x valid x R x SR x K x F')
         print('sample xyz shape:', sampled_xyz.unsqueeze(0).unsqueeze(2).shape, 'expected:', 'B x valid x R x SR x K x 3')
         print('sample pnt mask shape:', sample_pnt_mask.unsqueeze(0).unsqueeze(2).shape, 'expected:', 'B x valid x R x SR x K')
