@@ -185,7 +185,9 @@ class Trainer:
                 # model = create_model(opt)
                 # model.setup(opt)
                 # model.eval()
+                print('load points:', load_points)
                 if load_points in [1, 3]:
+
                     points_xyz_all = train_dataset.load_init_points()
                     points_xyz_all = points_xyz_all.unsqueeze(0)
                     print('points xyz shape in trainer:', points_xyz_all.shape)
