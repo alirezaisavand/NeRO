@@ -979,6 +979,7 @@ class MCShadingNetwork(nn.Module):
         all_confs = []
         all_xyz = []
         all_dir = []
+        print('points dir shape:', neural_points.points_dir.shape)
 
         # Loop over each query point in pts
         for query_point in pts_np:
