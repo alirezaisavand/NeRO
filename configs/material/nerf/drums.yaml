@@ -89,7 +89,8 @@ agg_alpha_xyz_mode: "None"
 agg_color_xyz_mode: "None"
 feature_init_method: "rand" #"rand" # "zeros"
 agg_axis_weight: [ 1., 1., 1.]
-agg_dist_pers: 20
+# Here changed this one from 20 to 0 to use world coordinates instead of perspective ones
+agg_dist_pers: 0
 radius_limit_scale: 4
 depth_limit_scale: 0
 alpha_range: 0

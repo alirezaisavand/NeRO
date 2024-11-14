@@ -1019,22 +1019,20 @@ class MCShadingNetwork(nn.Module):
         # Here we change the way we extract points features using neural points
         # agg_feats = self.feats_network(pts)
         w2c = world2cams
-        c2w = cam2worlds
+        c2w = cam2worlds.float()
         proj_mat_ls, near_far = proj_mats
         # todo change here based on get_item in nerf_synth360_ft_dataset.py
-        camrot = c2w[:, :, 0:3, 0:3]
-        campos = c2w[:, :, 0:3, 3]
-        # print("camrot", camrot, campos)
+        camrot = c2w[:, :, 0:3, 0:3].float()
+        campos = c2w[:, :, 0:3, 3].float()
 
-        campos = campos.float()
         camrotc2w = camrot.float() # @ FLIP_Z
-        c2w = c2w.float()
         sampled_embedding, sampled_color, sampled_conf, sampled_xyz, sampled_dir = self.get_k_nearest_embeddings(pts,
                                                                                                                  kdtree,
                                                                                                                  self.k,
                                                                                                                  neural_points)
-        sampled_xyz_pers = self.w2pers(neural_points.xyz, camrotc2w, campos)
-
+        # Here remove perspective points since we want to use world coordinated and with this batch sampling can't use perspective points
+        # sampled_xyz_pers = self.w2pers(neural_points.xyz, camrotc2w, campos)
+        sampled_xyz_pers = None
         print('neural points embedding shape:', neural_points.points_embeding.shape)
         print('embedding shape:', sampled_embedding.shape)
 
@@ -1043,7 +1041,8 @@ class MCShadingNetwork(nn.Module):
         sample_loc_w = pts
         # sampled_color, sampled_Rw2c, sampled_dir, sampled_conf, sampled_embedding, sampled_xyz_pers, sampled_xyz, sample_pnt_mask, sample_loc, sample_loc_w, sample_ray_dirs, ray_mask_tensor, vsize, grid_vox_sz = self.neural_points({"pixel_idx": pixel_idx, "camrotc2w": camrotc2w, "campos": campos, "near": near, "far": far,"focal": focal, "h": h, "w": w, "intrinsic": intrinsic,"gt_image":gt_image, "raydir":raydir})
         # decoded_features, ray_valid, weight, conf_coefficient = self.aggregator(sampled_color, sampled_Rw2c, sampled_dir, sampled_conf, sampled_embedding, sampled_xyz_pers, sampled_xyz, sample_pnt_mask, sample_loc, sample_loc_w, sample_ray_dirs, vsize, grid_vox_sz)
-        sample_loc = self.w2pers(sample_loc_w, camrotc2w, campos)
+        # sample_loc = self.w2pers(sample_loc_w, camrotc2w, campos)
+        sample_loc = None
         sampled_Rw2c = neural_points.Rw2c
 
         color_in, decoded_features, ray_valid, weight, conf_coefficient = aggregator(sampled_color, sampled_Rw2c, sampled_dir, sampled_conf, sampled_embedding, sampled_xyz_pers, sampled_xyz, None, sample_loc, sample_loc_w, None, None, None)
