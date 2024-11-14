@@ -978,7 +978,7 @@ class MCShadingNetwork(nn.Module):
         all_colors = []
         all_confs = []
         all_xyz = []
-        all_dir = []
+        # all_dir = []
         # Loop over each query point in pts
         for query_point in pts_np:
             # Find k-nearest neighbors for the query point
@@ -989,21 +989,21 @@ class MCShadingNetwork(nn.Module):
             neighbor_colors = neural_points.points_color[0][idx]
             neighbor_confs = neural_points.points_conf[0][idx]
             neighbor_xyz = neural_points.xyz[0][idx]
-            neighbor_dir = neural_points.points_dir[0][idx]
+            # neighbor_dir = neural_points.points_dir[0][idx]
             # Append the embeddings to the list
             all_embeddings.append(neighbor_embeddings)
             all_colors.append(neighbor_colors)
             all_confs.append(neighbor_confs)
             all_xyz.append(neighbor_xyz)
-            all_dir.append(neighbor_dir)
+            # all_dir.append(neighbor_dir)
 
         # Convert the list of embeddings to a tensor of shape (M, k, E)
         all_embeddings_tensor = torch.stack([embedding for embedding in all_embeddings])
         all_colors = torch.stack([color for color in all_colors])
         all_confs = torch.stack([conf for conf in all_confs])
         all_xyz = torch.stack([xyz for xyz in all_xyz])
-        all_dir = torch.stack([dir for dir in all_dir])
-        return all_embeddings_tensor, all_colors, all_confs, all_xyz, all_dir
+        # all_dir = torch.stack([dir for dir in all_dir])
+        return all_embeddings_tensor, all_colors, all_confs, all_xyz
 
     def w2pers(self, point_xyz, camrotc2w, campos):
         print('initial shapes:',point_xyz.shape, campos.shape)
@@ -1032,10 +1032,11 @@ class MCShadingNetwork(nn.Module):
 
         # camrotc2w = camrot.float() # @ FLIP_Z
         camtorc2w = None
-        sampled_embedding, sampled_color, sampled_conf, sampled_xyz, sampled_dir = self.get_k_nearest_embeddings(pts,
+        sampled_embedding, sampled_color, sampled_conf, sampled_xyz = self.get_k_nearest_embeddings(pts,
                                                                                                                  kdtree,
                                                                                                                  self.k,
                                                                                                                  neural_points)
+        sampled_dir = None
         # Here remove perspective points since we want to use world coordinated and with this batch sampling can't use perspective points
         # sampled_xyz_pers = self.w2pers(neural_points.xyz, camrotc2w, campos)
         sampled_xyz_pers = None
