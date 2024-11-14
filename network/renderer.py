@@ -48,7 +48,7 @@ def build_imgs_info(database: BaseDatabase, img_ids, is_nerf=False):
 
     world2cams=  [database.get_world2cam(img_id) for img_id in img_ids]
     cam2worlds = [database.get_cam2world(img_id) for img_id in img_ids]
-    id_list = img_ids
+
 
     images = np.stack(images, 0)
     if is_nerf:
@@ -58,6 +58,11 @@ def build_imgs_info(database: BaseDatabase, img_ids, is_nerf=False):
         images = color_map_forward(images).astype(np.float32)
     Ks = np.stack(Ks, 0).astype(np.float32)
     poses = np.stack(poses, 0).astype(np.float32)
+    proj_mats = np.stack(proj_mats, 0).astype(np.float32)
+    near_fars = np.stack(near_fars, 0).astype(np.float32)
+    intrinsics = np.stack(intrinsics, 0).astype(np.float32)
+    world2cams = np.stack(world2cams, 0).astype(np.float32)
+    cam2worlds = np.stack(cam2worlds, 0).astype(np.float32)
 
     imgs_info = {
         'imgs': images,
@@ -67,7 +72,6 @@ def build_imgs_info(database: BaseDatabase, img_ids, is_nerf=False):
         'proj_mats': proj_mats,
         'world2cams': world2cams,
         'cam2worlds': cam2worlds,
-        'id_list': id_list,
         'near_fars': near_fars
     }
 
