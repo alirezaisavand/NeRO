@@ -991,7 +991,9 @@ class MCShadingNetwork(nn.Module):
             neighbor_colors = neural_points.points_color[0][idx]
             neighbor_confs = neural_points.points_conf[0][idx]
             neighbor_xyz = neural_points.xyz[0][idx]
+            print('idx:', idx)
             neighbor_dir = neural_points.points_dir[0][idx]
+            print('I am here!')
             # Append the embeddings to the list
             all_embeddings.append(neighbor_embeddings)
             all_colors.append(neighbor_colors)
