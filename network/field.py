@@ -987,10 +987,10 @@ class MCShadingNetwork(nn.Module):
 
             # Retrieve embeddings of the neighbors
             neighbor_embeddings = neural_points.points_embeding[0][idx]
-            neighbor_colors = neural_points.points_color
-            neighbor_confs = neural_points.points_conf
-            neighbor_xyz = neural_points.xyz
-            neighbor_dir = neural_points.points_dir
+            neighbor_colors = neural_points.points_color[0][idx]
+            neighbor_confs = neural_points.points_conf[0][idx]
+            neighbor_xyz = neural_points.xyz[0][idx]
+            neighbor_dir = neural_points.points_dir[0][idx]
             # Append the embeddings to the list
             all_embeddings.append(neighbor_embeddings)
             all_colors.append(neighbor_colors)
@@ -1055,7 +1055,7 @@ class MCShadingNetwork(nn.Module):
         print('sample conf shape:', sampled_color.unsqueeze(0).unsqueeze(2).shape, 'expected:', 'B x valid R x SR x K x 1')
         print('sample embedding shape:', sampled_embedding.unsqueeze(0).unsqueeze(2).shape, 'expected:', 'B x valid x R x SR x K x F')
         print('sample xyz shape:', sampled_xyz.unsqueeze(0).unsqueeze(2).shape, 'expected:', 'B x valid x R x SR x K x 3')
-        print('sample pnt mask shape:', sample_pnt_mask.shape, 'expected:', 'B x valid x R x SR x K')
+        print('sample pnt mask shape:', sample_pnt_mask.unsqueeze(0).unsqueeze(2).shape, 'expected:', 'B x valid x R x SR x K')
         print('sample loc w shape:', sample_loc_w.unsqueeze(0).unsqueeze(2).shape, 'expected:', 'B x valid x R x SR x 3')
         color_in, decoded_features, ray_valid, weight, conf_coefficient = aggregator(sampled_color.unsqueeze(0).unsqueeze(2), sampled_Rw2c, sampled_dir.unsqueeze(0).unsqueeze(2), sampled_conf.unsqueeze(0).unsqueeze(2), sampled_embedding.unsqueeze(0).unsqueeze(2), sampled_xyz_pers, sampled_xyz.unsqueeze(0).unsqueeze(2), sample_pnt_mask, sample_loc, sample_loc_w.unsqueeze(0).unsqueeze(2), None, None, None)
 
