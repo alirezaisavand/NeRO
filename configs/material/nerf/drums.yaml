@@ -18,7 +18,7 @@ shader_cfg:
   human_lights: false
   # Here should have same value as the one in the main config file
   shading_feature_num: 256
-  num_viewdir_freqs: 4 #6
+  num_viewdir_freqs: 0 #6
 
 ######loss######
 loss: ['nerf_render','mat_reg']
@@ -147,7 +147,7 @@ which_blend_func: 'alpha'
 out_channels: 4
 
 num_pos_freqs: 10
-num_viewdir_freqs: 4 #6
+num_viewdir_freqs: 0 #6
 
 random_sample: 'random'
 random_sample_size: 70 #94 #48 # 32 * 32 :  1024
