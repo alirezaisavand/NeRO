@@ -1031,7 +1031,7 @@ class MCShadingNetwork(nn.Module):
                                                                                                                  kdtree,
                                                                                                                  self.k,
                                                                                                                  neural_points)
-        sampled_xyz_pers = self.w2pers(self.xyz, camrotc2w, campos)
+        sampled_xyz_pers = self.w2pers(neural_points.xyz, camrotc2w, campos)
 
         print('neural points embedding shape:', neural_points.points_embeding.shape)
         print('embedding shape:', sampled_embedding.shape)
