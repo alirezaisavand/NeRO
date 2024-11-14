@@ -908,7 +908,7 @@ class NeROMaterialRenderer(nn.Module):
         self.ray_tracer = raytracing.RayTracer(np.asarray(self.mesh.vertices), np.asarray(self.mesh.triangles))
 
         # Here we created point cloud from mesh
-        self.point_cloud = self.mesh.sample_points_uniformly(number_of_points=100000)
+        self.point_cloud = self.mesh.sample_points_uniformly(number_of_points=10000)
         self.opt.cloud_path = "/home/NeRO/data/point_cloud.ply" # Change it to specidied path
         open3d.io.write_point_cloud(self.opt.cloud_path, self.point_cloud)
 
@@ -919,7 +919,7 @@ class NeROMaterialRenderer(nn.Module):
         # checkpoint_path = os.path.join(opt.checkpoints_dir, opt.name, '{}_net_ray_marching.pth'.format(opt.resume_iter))
         # checkpoint_path = checkpoint_path if os.path.isfile(checkpoint_path) else None
         checkpoint_path = None
-        opt.num_point = 100000
+        opt.num_point = 10000
         self.device = torch.device('cuda:0')
         self.neural_points = NeuralPoints(opt.point_features_dim, opt.num_point, opt, self.device, checkpoint=checkpoint_path, feature_init_method=opt.feature_init_method, reg_weight=0., feedforward=opt.feedforward)
         self.aggregator = PointAggregator(opt)
