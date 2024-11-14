@@ -1006,8 +1006,8 @@ class MCShadingNetwork(nn.Module):
         return all_embeddings_tensor, all_colors, all_confs, all_xyz
 
     def w2pers(self, point_xyz, camrotc2w, campos):
-        print('initial shapes:',point_xyz.shape, campos.shape)
-        print('final shapes:', point_xyz[None, ...].shape, campos[:, None, :].shape)
+        # print('initial shapes:',point_xyz.shape, campos.shape)
+        # print('final shapes:', point_xyz[None, ...].shape, campos[:, None, :].shape)
         point_xyz_shift = point_xyz[None, ...] - campos[:, None, :]
         xyz = torch.sum(camrotc2w[:, None, :, :] * point_xyz_shift[:, :, :, None], dim=-2)
         # print(xyz.shape, (point_xyz_shift[:, None, :] * camrot.T).shape)
@@ -1032,7 +1032,7 @@ class MCShadingNetwork(nn.Module):
 
         # camrotc2w = camrot.float() # @ FLIP_Z
         camtorc2w = None
-        print('neural points embeddings shape:', neural_points.points_embeding.shape)
+        # print('neural points embeddings shape:', neural_points.points_embeding.shape)
         sampled_embedding, sampled_color, sampled_conf, sampled_xyz = self.get_k_nearest_embeddings(pts,
                                                                                                                  kdtree,
                                                                                                                  self.k,
@@ -1043,7 +1043,7 @@ class MCShadingNetwork(nn.Module):
         sampled_xyz_pers = None
 
 
-        print('points shape:', pts.shape)
+        # print('points shape:', pts.shape)
         sample_loc_w = pts
         # sampled_color, sampled_Rw2c, sampled_dir, sampled_conf, sampled_embedding, sampled_xyz_pers, sampled_xyz, sample_pnt_mask, sample_loc, sample_loc_w, sample_ray_dirs, ray_mask_tensor, vsize, grid_vox_sz = self.neural_points({"pixel_idx": pixel_idx, "camrotc2w": camrotc2w, "campos": campos, "near": near, "far": far,"focal": focal, "h": h, "w": w, "intrinsic": intrinsic,"gt_image":gt_image, "raydir":raydir})
         # decoded_features, ray_valid, weight, conf_coefficient = self.aggregator(sampled_color, sampled_Rw2c, sampled_dir, sampled_conf, sampled_embedding, sampled_xyz_pers, sampled_xyz, sample_pnt_mask, sample_loc, sample_loc_w, sample_ray_dirs, vsize, grid_vox_sz)
@@ -1051,13 +1051,13 @@ class MCShadingNetwork(nn.Module):
         sample_loc = None
         sampled_Rw2c = neural_points.Rw2c
         sample_pnt_mask = torch.ones_like(sampled_embedding[:, :, 0], dtype=torch.bool)
-        print('sample conf shape:', sampled_conf.unsqueeze(0).unsqueeze(2).shape, 'expected:', 'B x valid R x SR x K x 1')
-        print('sample embedding shape:', sampled_embedding.unsqueeze(0).unsqueeze(2).shape, 'expected:', 'B x valid x R x SR x K x F')
-        print('sample xyz shape:', sampled_xyz.unsqueeze(0).unsqueeze(2).shape, 'expected:', 'B x valid x R x SR x K x 3')
-        print('sample pnt mask shape:', sample_pnt_mask.unsqueeze(0).unsqueeze(2).shape, 'expected:', 'B x valid x R x SR x K')
-        print('sample loc w shape:', sample_loc_w.unsqueeze(0).unsqueeze(2).shape, 'expected:', 'B x valid x R x SR x 3')
+        # print('sample conf shape:', sampled_conf.unsqueeze(0).unsqueeze(2).shape, 'expected:', 'B x valid R x SR x K x 1')
+        # print('sample embedding shape:', sampled_embedding.unsqueeze(0).unsqueeze(2).shape, 'expected:', 'B x valid x R x SR x K x F')
+        # print('sample xyz shape:', sampled_xyz.unsqueeze(0).unsqueeze(2).shape, 'expected:', 'B x valid x R x SR x K x 3')
+        # print('sample pnt mask shape:', sample_pnt_mask.unsqueeze(0).unsqueeze(2).shape, 'expected:', 'B x valid x R x SR x K')
+        # print('sample loc w shape:', sample_loc_w.unsqueeze(0).unsqueeze(2).shape, 'expected:', 'B x valid x R x SR x 3')
         color_in, decoded_features, ray_valid, weight, conf_coefficient = aggregator(sampled_color.unsqueeze(0).unsqueeze(2), sampled_Rw2c, sampled_dir, sampled_conf.unsqueeze(0).unsqueeze(2), sampled_embedding.unsqueeze(0).unsqueeze(2), sampled_xyz_pers, sampled_xyz.unsqueeze(0).unsqueeze(2), sample_pnt_mask.unsqueeze(0).unsqueeze(2), sample_loc, sample_loc_w.unsqueeze(0).unsqueeze(2), None, None, None)
-        print('color_in shape:', color_in.shape)
+        # print('color_in shape:', color_in.shape)
 
 
         metallic = self.metallic_predictor(torch.cat([color_in, pts], -1))
