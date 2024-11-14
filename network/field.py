@@ -1021,10 +1021,12 @@ class MCShadingNetwork(nn.Module):
         w2c = world2cams
         c2w = cam2worlds.float()
         proj_mat_ls, near_far = proj_mats
-        # todo change here based on get_item in nerf_synth360_ft_dataset.py
-        camrot = c2w[:, :, 0:3, 0:3].float()
-        campos = c2w[:, :, 0:3, 3].float()
 
+        # camrot = c2w[:, :, 0:3, 0:3].float()
+        camrot = None
+
+        # campos = c2w[:, :, 0:3, 3].float()
+        campos = None
         camrotc2w = camrot.float() # @ FLIP_Z
         sampled_embedding, sampled_color, sampled_conf, sampled_xyz, sampled_dir = self.get_k_nearest_embeddings(pts,
                                                                                                                  kdtree,
