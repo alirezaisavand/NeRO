@@ -1054,7 +1054,7 @@ class MCShadingNetwork(nn.Module):
         print('sample xyz shape:', sampled_xyz.unsqueeze(0).unsqueeze(2).shape, 'expected:', 'B x valid x R x SR x K x 3')
         print('sample pnt mask shape:', sample_pnt_mask.unsqueeze(0).unsqueeze(2).shape, 'expected:', 'B x valid x R x SR x K')
         print('sample loc w shape:', sample_loc_w.unsqueeze(0).unsqueeze(2).shape, 'expected:', 'B x valid x R x SR x 3')
-        color_in, decoded_features, ray_valid, weight, conf_coefficient = aggregator(sampled_color.unsqueeze(0).unsqueeze(2), sampled_Rw2c, sampled_dir.unsqueeze(0).unsqueeze(2), sampled_conf.unsqueeze(0).unsqueeze(2), sampled_embedding.unsqueeze(0).unsqueeze(2), sampled_xyz_pers, sampled_xyz.unsqueeze(0).unsqueeze(2), sample_pnt_mask, sample_loc, sample_loc_w.unsqueeze(0).unsqueeze(2), None, None, None)
+        color_in, decoded_features, ray_valid, weight, conf_coefficient = aggregator(sampled_color.unsqueeze(0).unsqueeze(2), sampled_Rw2c, sampled_dir.unsqueeze(0).unsqueeze(2), sampled_conf.unsqueeze(0).unsqueeze(2), sampled_embedding.unsqueeze(0).unsqueeze(2), sampled_xyz_pers, sampled_xyz.unsqueeze(0).unsqueeze(2), sample_pnt_mask.unsqueeze(0).unsqueeze(2), sample_loc, sample_loc_w.unsqueeze(0).unsqueeze(2), None, None, None)
         print('color_in shape:', color_in.shape)
 
 
