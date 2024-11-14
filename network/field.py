@@ -1021,9 +1021,9 @@ class MCShadingNetwork(nn.Module):
         w2c = world2cams
         c2w = cam2worlds
         proj_mat_ls, near_far = proj_mats
-
-        camrot = (c2w[0:3, 0:3])
-        campos = c2w[0:3, 3]
+        # todo change here based on get_item in nerf_synth360_ft_dataset.py
+        camrot = c2w[:, :, 0:3, 0:3]
+        campos = c2w[:, :, 0:3, 3]
         # print("camrot", camrot, campos)
 
         campos = campos.float()
@@ -1040,10 +1040,10 @@ class MCShadingNetwork(nn.Module):
 
 
         print('points shape:', pts.shape)
-        sample_loc_w_tensor = pts
+        sample_loc_w = pts
         # sampled_color, sampled_Rw2c, sampled_dir, sampled_conf, sampled_embedding, sampled_xyz_pers, sampled_xyz, sample_pnt_mask, sample_loc, sample_loc_w, sample_ray_dirs, ray_mask_tensor, vsize, grid_vox_sz = self.neural_points({"pixel_idx": pixel_idx, "camrotc2w": camrotc2w, "campos": campos, "near": near, "far": far,"focal": focal, "h": h, "w": w, "intrinsic": intrinsic,"gt_image":gt_image, "raydir":raydir})
         # decoded_features, ray_valid, weight, conf_coefficient = self.aggregator(sampled_color, sampled_Rw2c, sampled_dir, sampled_conf, sampled_embedding, sampled_xyz_pers, sampled_xyz, sample_pnt_mask, sample_loc, sample_loc_w, sample_ray_dirs, vsize, grid_vox_sz)
-        self.w2pers(sample_loc_w_tensor, camrotc2w, campos)
+        sample_loc = self.w2pers(sample_loc_w, camrotc2w, campos)
         sampled_Rw2c = neural_points.Rw2c
 
         color_in, decoded_features, ray_valid, weight, conf_coefficient = aggregator(sampled_color, sampled_Rw2c, sampled_dir, sampled_conf, sampled_embedding, sampled_xyz_pers, sampled_xyz, None, sample_loc, sample_loc_w, None, None, None)
