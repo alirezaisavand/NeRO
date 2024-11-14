@@ -564,8 +564,10 @@ class NeRFSyntheticDatabase(BaseDatabase):
         return self.intrinsics[int(img_id)]
 
     def get_proj_mat(self, img_id):
-        return self.proj_mats[int(img_id)]
+        return self.proj_mats[int(img_id)][0]
 
+    def get_near_far(self, img_id):
+        return self.proj_mats[int(img_id)][1]
 
     def get_depth(self, img_id):
         assert (self.scale_factor == 1.0)

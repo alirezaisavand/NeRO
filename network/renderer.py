@@ -43,6 +43,7 @@ def build_imgs_info(database: BaseDatabase, img_ids, is_nerf=False):
 
     # Here we add extra information we need for point embeddings
     proj_mats = [database.get_proj_mat(img_id) for img_id in img_ids]
+    near_fars = [database.get_near_far(img_id) for img_id in img_ids]
     intrinsics = [database.get_intrinsic(img_id) for img_id in img_ids]
 
     world2cams=  [database.get_world2cam(img_id) for img_id in img_ids]
@@ -66,7 +67,8 @@ def build_imgs_info(database: BaseDatabase, img_ids, is_nerf=False):
         'proj_mats': proj_mats,
         'world2cams': world2cams,
         'cam2worlds': cam2worlds,
-        'id_list': id_list
+        'id_list': id_list,
+        'near_fars': near_fars
     }
 
     if is_nerf:
@@ -1181,6 +1183,8 @@ class NeROMaterialRenderer(nn.Module):
         # Here we get additional parameters for neural points
         intrinsics = self.train_batch['intrinsics'][self.train_batch_i:self.train_batch_i + rn].cuda()
         proj_mats = self.train_batch['proj_mats'][self.train_batch_i:self.train_batch_i + rn].cuda()
+        near_fars = self.train_batch['near_fars'][self.train_batch_i:self.train_batch_i + rn].cuda()
+        proj_mats = (proj_mats, near_fars)
         world2cams = self.train_batch['world2cams'][self.train_batch_i:self.train_batch_i + rn].cuda()
         cam2worlds = self.train_batch['cam2worlds'][self.train_batch_i:self.train_batch_i + rn].cuda()
 
@@ -1226,6 +1230,8 @@ class NeROMaterialRenderer(nn.Module):
                 # Here we get additional parameters for neural points from batch
                 intrinsics = ray_batch['intrinsics'][ri:ri + trn][hit_mask]
                 proj_mats = ray_batch['proj_mats'][ri:ri + trn][hit_mask]
+                near_fars = ray_batch['near_fars'][ri:ri + trn][hit_mask]
+                proj_mats = (proj_mats, near_fars)
                 world2cams = ray_batch['world2cams'][ri:ri + trn][hit_mask]
                 cam2worlds = ray_batch['cam2worlds'][ri:ri + trn][hit_mask]
 
