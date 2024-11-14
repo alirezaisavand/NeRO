@@ -986,7 +986,7 @@ class MCShadingNetwork(nn.Module):
             [k, idx, _] = kdtree.search_knn_vector_3d(query_point, k)
 
             # Retrieve embeddings of the neighbors
-            neighbor_embeddings = neural_points.points_embedding[0][idx]
+            neighbor_embeddings = neural_points.points_embeding[0][idx]
             neighbor_colors = neural_points.points_color
             neighbor_confs = neural_points.points_conf
             neighbor_xyz = neural_points.xyz
