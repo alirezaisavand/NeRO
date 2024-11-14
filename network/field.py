@@ -980,7 +980,10 @@ class MCShadingNetwork(nn.Module):
         all_xyz = []
         all_dir = []
         print('points dir shape:', neural_points.points_dir.shape)
-
+        print('points color shape:', neural_points.points_color.shape)
+        print('points conf shape:', neural_points.points_conf.shape)
+        print('points xyz shape:', neural_points.xyz.shape)
+        print('points embedding shape:', neural_points.points_embeding.shape)
         # Loop over each query point in pts
         for query_point in pts_np:
             # Find k-nearest neighbors for the query point
