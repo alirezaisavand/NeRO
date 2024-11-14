@@ -960,6 +960,7 @@ class NeROMaterialRenderer(nn.Module):
         if not editing:
             self.neural_points.set_points(points_xyz, points_embedding, points_color=points_color, points_dir=points_dir, points_conf=points_conf, parameter=self.opt.feedforward == 0, Rw2c=Rw2c, eulers=eulers)
         else:
+            print('points xyz shape before setting points:', points_xyz.shape)
             self.neural_points.editing_set_points(points_xyz, points_embedding, points_color=points_color, points_dir=points_dir, points_conf=points_conf, parameter=self.opt.feedforward == 0, Rw2c=Rw2c, eulers=eulers)
         # if self.opt.feedforward == 0 and self.opt.is_train:
         #     self.setup_optimizer(self.opt)

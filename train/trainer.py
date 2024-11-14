@@ -187,6 +187,8 @@ class Trainer:
                 # model.eval()
                 if load_points in [1, 3]:
                     points_xyz_all = train_dataset.load_init_points()
+                    points_xyz_all = points_xyz_all.unsqueeze(0)
+                    print('points xyz shape in trainer:', points_xyz_all.shape)
                 # if load_points == 2:
                 #     points_xyz_all = train_dataset.load_init_depth_points(device="cuda", vox_res=100)
                 # if load_points == 3:
@@ -301,11 +303,11 @@ class Trainer:
                     # visualizer.save_neural_points("pl", gen_pnts, gen_color, None, save_ref=False)
                     # print("vis pl")
                     points_xyz_all = torch.cat([points_xyz_all, gen_pnts], dim=0)
-                    points_xyz_all = points_xyz_all.unsqueeze(0)
                     points_embedding_all = torch.cat([points_embedding_all, gen_embedding], dim=1)
                     points_color_all = torch.cat([points_color_all, gen_dir], dim=1)
                     points_dir_all = torch.cat([points_dir_all, gen_color], dim=1)
                     points_conf_all = torch.cat([points_conf_all, gen_conf], dim=1)
+
                 self.network.set_points(points_xyz_all.cuda(), points_embedding_all.cuda(),
                                  points_color=points_color_all.cuda(),
                                  points_dir=points_dir_all.cuda(), points_conf=points_conf_all.cuda(),
