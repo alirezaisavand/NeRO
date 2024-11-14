@@ -260,6 +260,8 @@ class Trainer:
                 featuredim = opt.point_features_dim
                 points_embedding_all = torch.zeros([1, 0, featuredim], device=unique_cam_ind.device,
                                                    dtype=torch.float32)
+                print('featuredim', featuredim)
+                print('points embedding shape', points_embedding_all.shape)
                 points_color_all = torch.zeros([1, 0, 3], device=unique_cam_ind.device, dtype=torch.float32)
                 points_dir_all = torch.zeros([1, 0, 3], device=unique_cam_ind.device, dtype=torch.float32)
                 points_conf_all = torch.zeros([1, 0, 1], device=unique_cam_ind.device, dtype=torch.float32)
@@ -311,7 +313,7 @@ class Trainer:
 
                 self.network.set_points(points_xyz_all.cuda(), points_embedding_all.cuda(),
                                  points_color=points_color_all.cuda(),
-                                 points_dir=points_dir_all.cuda(), points_conf=points_conf_all.cuda(),
+                                 points_dir=None, points_conf=points_conf_all.cuda(),
                                  Rw2c=normRw2c.cuda() if opt.load_points < 1 and opt.normview != 3 else None)
                 epoch_count = 1
                 total_steps = 0

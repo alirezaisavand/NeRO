@@ -80,7 +80,7 @@ manual_std_depth: 0.0
 depth_conf_thresh: 0.8
 appr_feature_str0: ['imgfeat_0_0123', 'dir_0', 'point_conf']
 point_conf_mode: "1" # 0 for only at features, 1 for multi at weight
-point_dir_mode: "0" # 0 for only at features, 1 for color branch
+point_dir_mode: "1" # 0 for only at features, 1 for color branch
 point_color_mode: "1" # 0 for only at features, 1 for color branch
 default_conf: 0.15
 
