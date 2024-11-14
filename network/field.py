@@ -1000,7 +1000,10 @@ class MCShadingNetwork(nn.Module):
 
         # Convert the list of embeddings to a tensor of shape (M, k, E)
         all_embeddings_tensor = torch.stack([embedding for embedding in all_embeddings])
-
+        all_colors = torch.stack([color for color in all_colors])
+        all_confs = torch.stack([conf for conf in all_confs])
+        all_xyz = torch.stack([xyz for xyz in all_xyz])
+        all_dir = torch.stack([dir for dir in all_dir])
         return all_embeddings_tensor, all_colors, all_confs, all_xyz, all_dir
 
     def w2pers(self, point_xyz, camrotc2w, campos):
