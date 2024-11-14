@@ -16,6 +16,9 @@ shader_cfg:
   light_exp_max: 5.0
   inner_light_exp_max: 5.0
   human_lights: false
+  # Here should have same value as the one in the main config file
+  shading_feature_num: 256
+  num_viewdir_freqs: 4 #6
 
 ######loss######
 loss: ['nerf_render','mat_reg']
