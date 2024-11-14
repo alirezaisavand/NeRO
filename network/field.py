@@ -1030,8 +1030,7 @@ class MCShadingNetwork(nn.Module):
         sampled_embedding, sampled_color, sampled_conf, sampled_xyz, sampled_dir = self.get_k_nearest_embeddings(pts,
                                                                                                                  kdtree,
                                                                                                                  self.k,
-                                                                                                                 neural_points.points_embeding[
-                                                                                                                     0])
+                                                                                                                 neural_points)
         sampled_xyz_pers = self.w2pers(self.xyz, camrotc2w, campos)
 
         print('neural points embedding shape:', neural_points.points_embeding.shape)
