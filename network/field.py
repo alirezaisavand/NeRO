@@ -979,11 +979,6 @@ class MCShadingNetwork(nn.Module):
         all_confs = []
         all_xyz = []
         all_dir = []
-        print('points dir shape:', neural_points.points_dir.shape)
-        print('points color shape:', neural_points.points_color.shape)
-        print('points conf shape:', neural_points.points_conf.shape)
-        print('points xyz shape:', neural_points.xyz.shape)
-        print('points embedding shape:', neural_points.points_embeding.shape)
         # Loop over each query point in pts
         for query_point in pts_np:
             # Find k-nearest neighbors for the query point
@@ -994,9 +989,7 @@ class MCShadingNetwork(nn.Module):
             neighbor_colors = neural_points.points_color[0][idx]
             neighbor_confs = neural_points.points_conf[0][idx]
             neighbor_xyz = neural_points.xyz[0][idx]
-            print('idx:', idx)
             neighbor_dir = neural_points.points_dir[0][idx]
-            print('I am here!')
             # Append the embeddings to the list
             all_embeddings.append(neighbor_embeddings)
             all_colors.append(neighbor_colors)
@@ -1046,8 +1039,6 @@ class MCShadingNetwork(nn.Module):
         # Here remove perspective points since we want to use world coordinated and with this batch sampling can't use perspective points
         # sampled_xyz_pers = self.w2pers(neural_points.xyz, camrotc2w, campos)
         sampled_xyz_pers = None
-        print('neural points embedding shape:', neural_points.points_embeding.shape)
-        print('embedding shape:', sampled_embedding.shape)
 
 
         print('points shape:', pts.shape)

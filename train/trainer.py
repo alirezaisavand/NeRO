@@ -189,8 +189,6 @@ class Trainer:
                 if load_points in [1, 3]:
 
                     points_xyz_all = train_dataset.load_init_points()
-                    # points_xyz_all = points_xyz_all.unsqueeze(0)
-                    print('points xyz shape in trainer:', points_xyz_all.shape)
                 # if load_points == 2:
                 #     points_xyz_all = train_dataset.load_init_depth_points(device="cuda", vox_res=100)
                 # if load_points == 3:
@@ -317,9 +315,7 @@ class Trainer:
                                  Rw2c=normRw2c.cuda() if opt.load_points < 1 and opt.normview != 3 else None)
                 epoch_count = 1
                 total_steps = 0
-                print(points_embedding_all)
 
-                print(points_embedding_all.shape)
                 del points_xyz_all, points_embedding_all, points_color_all, points_dir_all, points_conf_all
 
 
