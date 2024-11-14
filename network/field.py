@@ -1004,6 +1004,8 @@ class MCShadingNetwork(nn.Module):
         return all_embeddings_tensor, all_colors, all_confs, all_xyz, all_dir
 
     def w2pers(self, point_xyz, camrotc2w, campos):
+        print('initial shapes:',point_xyz.shape, campos.shape)
+        print('final shapes:', point_xyz[None, ...].shape, campos[:, None, :].shape)
         point_xyz_shift = point_xyz[None, ...] - campos[:, None, :]
         xyz = torch.sum(camrotc2w[:, None, :, :] * point_xyz_shift[:, :, :, None], dim=-2)
         # print(xyz.shape, (point_xyz_shift[:, None, :] * camrot.T).shape)
