@@ -1052,11 +1052,11 @@ class MCShadingNetwork(nn.Module):
         sample_loc = None
         sampled_Rw2c = neural_points.Rw2c
         sample_pnt_mask = torch.ones_like(sampled_embedding[:, :, 0], dtype=torch.bool)
-        print('sample conf shape:', sampled_color.unsqueeze(0).unsqueeze(2), 'expected:', 'B x valid R x SR x K x 1')
-        print('sample embedding shape:', sampled_embedding.unsqueeze(0).unsqueeze(2), 'expected:', 'B x valid x R x SR x K x F')
-        print('sample xyz shape:', sampled_xyz.unsqueeze(0).unsqueeze(2), 'expected:', 'B x valid x R x SR x K x 3')
-        print('sample pnt mask shape:', sample_pnt_mask, 'expected:', 'B x valid x R x SR x K')
-        print('sample loc w shape:', sample_loc_w.unsqueeze(0).unsqueeze(2), 'expected:', 'B x valid x R x SR x 3')
+        print('sample conf shape:', sampled_color.unsqueeze(0).unsqueeze(2).shape, 'expected:', 'B x valid R x SR x K x 1')
+        print('sample embedding shape:', sampled_embedding.unsqueeze(0).unsqueeze(2).shape, 'expected:', 'B x valid x R x SR x K x F')
+        print('sample xyz shape:', sampled_xyz.unsqueeze(0).unsqueeze(2).shape, 'expected:', 'B x valid x R x SR x K x 3')
+        print('sample pnt mask shape:', sample_pnt_mask.shape, 'expected:', 'B x valid x R x SR x K')
+        print('sample loc w shape:', sample_loc_w.unsqueeze(0).unsqueeze(2).shape, 'expected:', 'B x valid x R x SR x 3')
         color_in, decoded_features, ray_valid, weight, conf_coefficient = aggregator(sampled_color.unsqueeze(0).unsqueeze(2), sampled_Rw2c, sampled_dir.unsqueeze(0).unsqueeze(2), sampled_conf.unsqueeze(0).unsqueeze(2), sampled_embedding.unsqueeze(0).unsqueeze(2), sampled_xyz_pers, sampled_xyz.unsqueeze(0).unsqueeze(2), sample_pnt_mask, sample_loc, sample_loc_w.unsqueeze(0).unsqueeze(2), None, None, None)
 
 
