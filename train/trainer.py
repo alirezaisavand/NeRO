@@ -285,7 +285,6 @@ class Trainer:
                     points_color_all = torch.cat([points_color_all, color], dim=1)
                     points_dir_all = torch.cat([points_dir_all, dir], dim=1)
                     points_conf_all = torch.cat([points_conf_all, conf], dim=1)
-                    print('points dir shape in trainer:', points_dir_all.shape)
                     # visualizer.save_neural_points(id, cam_xyz_all, color, batch, save_ref=True)
                 points_xyz_all = torch.cat(points_xyz_all, dim=0)
                 # visualizer.save_neural_points("init", points_xyz_all, points_color_all, None, save_ref=load_points == 0)
