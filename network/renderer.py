@@ -1112,6 +1112,9 @@ class NeROMaterialRenderer(nn.Module):
         cam2worlds = imgs_info['cam2worlds']  # Shape: (imn, 4, 4)
         cam2worlds_expanded = cam2worlds.unsqueeze(1).repeat(1, h * w, 1, 1)  # Shape: (imn, h * w, 4, 4)
 
+        near_fars = imgs_info['near_fars']  # Shape: (imn, 2)
+        near_fars_expanded = near_fars.unsqueeze(1).repeat(1, h * w, 1)  # Shape: (imn, h * w, 2)
+
         if is_train:
             ray_batch = {
                 'rays_o': rays_o[hit_mask].to(device),
@@ -1125,6 +1128,7 @@ class NeROMaterialRenderer(nn.Module):
                 'proj_mats': proj_mats_expanded[hit_mask].to(device),
                 'world2cams': world2cams_expanded[hit_mask].to(device),
                 'cam2worlds': cam2worlds_expanded[hit_mask].to(device),
+                'near_fars': near_fars_expanded[hit_mask].to(device),
                 # 'dirs': dirs.float().reshape(rn, 3).to(device),
             }
         else:
@@ -1142,6 +1146,7 @@ class NeROMaterialRenderer(nn.Module):
                 'proj_mats': proj_mats_expanded[0].to(device),
                 'world2cams': world2cams_expanded[0].to(device),
                 'cam2worlds': cam2worlds_expanded[0].to(device),
+                'near_fars': near_fars_expanded[0].to(device),
             }
 
         return ray_batch
