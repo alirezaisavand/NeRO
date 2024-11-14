@@ -1027,7 +1027,9 @@ class MCShadingNetwork(nn.Module):
 
         # campos = c2w[:, :, 0:3, 3].float()
         campos = None
-        camrotc2w = camrot.float() # @ FLIP_Z
+
+        # camrotc2w = camrot.float() # @ FLIP_Z
+        camtorc2w = None
         sampled_embedding, sampled_color, sampled_conf, sampled_xyz, sampled_dir = self.get_k_nearest_embeddings(pts,
                                                                                                                  kdtree,
                                                                                                                  self.k,
