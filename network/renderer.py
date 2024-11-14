@@ -29,6 +29,7 @@ class ConfigWrapper:
         self.point_hyper_dim = 256
         self.view_ori = 0
         self.agg_weight_norm = 1
+        self.act_super = 1
         # Set each key-value pair in the dictionary as an attribute
         for key, value in config_dict.items():
             setattr(self, key, value)
