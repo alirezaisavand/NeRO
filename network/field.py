@@ -982,8 +982,8 @@ class MCShadingNetwork(nn.Module):
         # Loop over each query point in pts
         for query_point in pts_np:
             # Find k-nearest neighbors for the query point
-            [k, idx, _] = kdtree.search_knn_vector_3d(query_point, k)
-
+            # [k, idx, _] = kdtree.search_knn_vector_3d(query_point, k)
+            idx = list(range(0, k))
             # Retrieve embeddings of the neighbors
             neighbor_embeddings = neural_points.points_embeding[0][idx]
             neighbor_colors = neural_points.points_color[0][idx]
