@@ -974,10 +974,8 @@ class MCShadingNetwork(nn.Module):
         """
         pts_np = pts.cpu().numpy().astype(np.float32)  # Convert query points to NumPy
         # print(pts_np.dtype, pts_np.shape)
-        print('pts:', pts)
-        print('in get knn before search')
         distances, indices = kdtree.search(pts_np, k)  # Perform k-NN search
-        print('in get knn after search')
+
         indices_tensor = torch.tensor(indices, device=pts.device)  # Convert indices to tensor
         embeddings = neural_points.points_embeding[0][indices_tensor]
         colors = neural_points.points_color[0][indices_tensor]
@@ -1047,12 +1045,11 @@ class MCShadingNetwork(nn.Module):
         # camrotc2w = camrot.float() # @ FLIP_Z
         camtorc2w = None
         # print('neural points embeddings shape:', neural_points.points_embeding.shape)
-        print('in predict materials before knn')
         sampled_embedding, sampled_color, sampled_conf, sampled_xyz = self.get_k_nearest_embeddings(pts,
                                                                                                                  kdtree,
                                                                                                                  self.k,
                                                                                                                  neural_points)
-        print('after knn')
+
         sampled_dir = None
         # Here remove perspective points since we want to use world coordinated and with this batch sampling can't use perspective points
         # sampled_xyz_pers = self.w2pers(neural_points.xyz, camrotc2w, campos)
