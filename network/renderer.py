@@ -919,6 +919,7 @@ class NeROMaterialRenderer(nn.Module):
 
         self.dimension = 3
         print('creating index...')
+        faiss.omp_set_num_threads(1)
         self.kdtree = faiss.IndexFlatL2(self.dimension)
         print('index created')
         print('moving index to GPU')
