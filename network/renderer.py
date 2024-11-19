@@ -917,9 +917,9 @@ class NeROMaterialRenderer(nn.Module):
         # self.kdtree = open3d.geometry.KDTreeFlann(self.point_cloud)
         # Kdtree in fact is not kdtree anymore
 
-
-        assert not torch.isnan(self.point_cloud.points).any(), "Dataset contains NaN values!"
-        assert not torch.isinf(self.point_cloud.points).any(), "Dataset contains Inf values!"
+        points = np.asarray(self.point_cloud.points)
+        assert not torch.isnan(points).any(), "Dataset contains NaN values!"
+        assert not torch.isinf(points).any(), "Dataset contains Inf values!"
         faiss.omp_set_num_threads(1)
 
         self.dimension = 3
@@ -928,7 +928,7 @@ class NeROMaterialRenderer(nn.Module):
         print('index created')
 
         print('adding points to index...')
-        self.kdtree.add(self.point_cloud.points.cpu().numpy())
+        kdtree.add(points)
         print('points added to index')
 
         print('moving index to GPU...')
