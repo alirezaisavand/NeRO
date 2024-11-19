@@ -972,7 +972,7 @@ class MCShadingNetwork(nn.Module):
             torch.Tensor: Tensor of shape (M, k, E) containing the embeddings of the
                           k-nearest neighbors for each point in pts.
         """
-        # pts_np = pts.cpu().numpy().astype(np.float32)  # Convert query points to NumPy
+        pts_np = pts.cpu().numpy().astype(np.float32)  # Convert query points to NumPy
         # print(pts_np.dtype, pts_np.shape)
         print('pts:', pts)
         print('in get knn before search')

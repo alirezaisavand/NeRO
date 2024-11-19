@@ -924,15 +924,16 @@ class NeROMaterialRenderer(nn.Module):
         self.dimension = points.shape[1]
         print('dimension:', self.dimension)
         print('creating index...')
-        res = faiss.StandardGpuResources()
-        kdtree = faiss.GpuIndexFlatL2(res, self.dimension)
+        self.kdtree = faiss.IndexFlatL2(self.dimension)
         print('index created')
 
         print('adding points to index...')
-        kdtree.add(torch.from_numpy(points).float().cuda())
+        self.kdtree.add(points)
         print('points added to index')
 
         print('moving index to GPU...')
+        # self.gpu_resources = faiss.StandardGpuResources()
+        # self.kdtree = faiss.index_cpu_to_gpu(self.gpu_resources, 0, kdtree)
         print('index moved to GPU')
 
         opt = self.opt
