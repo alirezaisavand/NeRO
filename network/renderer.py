@@ -918,11 +918,11 @@ class NeROMaterialRenderer(nn.Module):
         # Kdtree in fact is not kdtree anymore
 
         points = np.asarray(self.point_cloud.points).astype(np.float32)
-        assert not torch.isnan(torch.from_numpy(points)).any(), "Dataset contains NaN values!"
-        assert not torch.isinf(torch.from_numpy(points)).any(), "Dataset contains Inf values!"
-        faiss.omp_set_num_threads(1)
+        assert not np.isnan(points).any(), "Dataset contains NaN values!"
+        assert not np.isinf(points).any(), "Dataset contains Inf values!"
 
-        self.dimension = 3
+        self.dimension = points.shape[1]
+        print('dimension:', self.dimension)
         print('creating index...')
         kdtree = faiss.IndexFlatL2(self.dimension)
         print('index created')
@@ -932,7 +932,8 @@ class NeROMaterialRenderer(nn.Module):
         print('points added to index')
 
         print('moving index to GPU...')
-        self.kdtree = faiss.index_cpu_to_gpu(faiss.StandardGpuResources(), 0, kdtree)
+        self.gpu_resources = faiss.StandardGpuResources()
+        self.kdtree = faiss.index_cpu_to_gpu(self.gpu_resources, 0, kdtree)
         print('index moved to GPU')
 
         opt = self.opt
