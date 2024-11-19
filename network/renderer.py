@@ -909,7 +909,7 @@ class NeROMaterialRenderer(nn.Module):
         self.ray_tracer = raytracing.RayTracer(np.asarray(self.mesh.vertices), np.asarray(self.mesh.triangles))
 
         # Here we created point cloud from mesh
-        self.point_cloud = self.mesh.sample_points_uniformly(number_of_points=1000)
+        self.point_cloud = self.mesh.sample_points_uniformly(number_of_points=10000)
         self.opt.cloud_path = "/home/NeRO/data/point_cloud.ply" # Change it to specified path
         open3d.io.write_point_cloud(self.opt.cloud_path, self.point_cloud)
 
