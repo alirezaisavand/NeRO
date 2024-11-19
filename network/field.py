@@ -974,7 +974,9 @@ class MCShadingNetwork(nn.Module):
         """
         pts_np = pts.cpu().numpy().astype(np.float32)  # Convert query points to NumPy
         print(pts_np.dtype, pts_np.shape)
+        print('in get knn before search')
         distances, indices = kdtree.search(pts_np, k)  # Perform k-NN search
+        print('in get knn after search')
         indices_tensor = torch.tensor(indices, device=pts.device)  # Convert indices to tensor
         embeddings = neural_points.points_embeding[0][indices_tensor]
         colors = neural_points.points_color[0][indices_tensor]
