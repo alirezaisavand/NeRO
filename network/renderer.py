@@ -916,7 +916,7 @@ class NeROMaterialRenderer(nn.Module):
         # initialize K-D tree for queries
         # self.kdtree = open3d.geometry.KDTreeFlann(self.point_cloud)
         # Kdtree in fact is not kdtree anymore
-        self.dimension = self.point_cloud.shape[1]
+        self.dimension = 3
         self.kdtree = faiss.IndexFlatL2(self.dimension)
         self.kdtree = faiss.index_cpu_to_gpu(faiss.StandardGpuResources(), 0, self.kdtree)
         self.kdtree.add(self.point_cloud)
