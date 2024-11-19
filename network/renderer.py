@@ -916,11 +916,17 @@ class NeROMaterialRenderer(nn.Module):
         # initialize K-D tree for queries
         # self.kdtree = open3d.geometry.KDTreeFlann(self.point_cloud)
         # Kdtree in fact is not kdtree anymore
-        self.dimension = 3
-        self.kdtree = faiss.IndexFlatL2(self.dimension)
-        self.kdtree = faiss.index_cpu_to_gpu(faiss.StandardGpuResources(), 0, self.kdtree)
-        self.kdtree.add(self.point_cloud)
 
+        self.dimension = 3
+        print('creating index...')
+        self.kdtree = faiss.IndexFlatL2(self.dimension)
+        print('index created')
+        print('moving index to GPU')
+        self.kdtree = faiss.index_cpu_to_gpu(faiss.StandardGpuResources(), 0, self.kdtree)
+        print('index moved to GPU')
+        print('adding points to index')
+        self.kdtree.add(self.point_cloud)
+        print('points added to index')
         opt = self.opt
         import os
         # checkpoint_path = os.path.join(opt.checkpoints_dir, opt.name, '{}_net_ray_marching.pth'.format(opt.resume_iter))
