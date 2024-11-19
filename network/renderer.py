@@ -917,7 +917,7 @@ class NeROMaterialRenderer(nn.Module):
         # self.kdtree = open3d.geometry.KDTreeFlann(self.point_cloud)
         # Kdtree in fact is not kdtree anymore
 
-        points = np.asarray(self.point_cloud.points)
+        points = np.asarray(self.point_cloud.points).astype(np.float32)
         assert not torch.isnan(torch.from_numpy(points)).any(), "Dataset contains NaN values!"
         assert not torch.isinf(torch.from_numpy(points)).any(), "Dataset contains Inf values!"
         faiss.omp_set_num_threads(1)
