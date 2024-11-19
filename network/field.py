@@ -1043,10 +1043,12 @@ class MCShadingNetwork(nn.Module):
         # camrotc2w = camrot.float() # @ FLIP_Z
         camtorc2w = None
         # print('neural points embeddings shape:', neural_points.points_embeding.shape)
+        print('in predict materials before knn')
         sampled_embedding, sampled_color, sampled_conf, sampled_xyz = self.get_k_nearest_embeddings(pts,
                                                                                                                  kdtree,
                                                                                                                  self.k,
                                                                                                                  neural_points)
+        print('after knn')
         sampled_dir = None
         # Here remove perspective points since we want to use world coordinated and with this batch sampling can't use perspective points
         # sampled_xyz_pers = self.w2pers(neural_points.xyz, camrotc2w, campos)
