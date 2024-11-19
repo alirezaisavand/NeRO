@@ -17,6 +17,7 @@ from pointnerf.models.mvs.mvs_points_model import MvsPointsModel
 from pointnerf.models.neural_points.neural_points import NeuralPoints
 from pointnerf.models.aggregators.point_aggregators import PointAggregator
 from tqdm import trange
+import faiss
 
 class ConfigWrapper:
     def __init__(self, config_dict):
@@ -913,7 +914,13 @@ class NeROMaterialRenderer(nn.Module):
         open3d.io.write_point_cloud(self.opt.cloud_path, self.point_cloud)
 
         # initialize K-D tree for queries
-        self.kdtree = open3d.geometry.KDTreeFlann(self.point_cloud)
+        # self.kdtree = open3d.geometry.KDTreeFlann(self.point_cloud)
+        # Kdtree in fact is not kdtree anymore
+        self.dimension = self.point_cloud.shape[1]
+        self.kdtree = faiss.IndexFlatL2(self.dimension)
+        self.kdtree = faiss.index_cpu_to_gpu(faiss.StandardGpuResources(), 0, self.kdtree)
+        self.kdtree.add(self.point_cloud)
+
         opt = self.opt
         import os
         # checkpoint_path = os.path.join(opt.checkpoints_dir, opt.name, '{}_net_ray_marching.pth'.format(opt.resume_iter))

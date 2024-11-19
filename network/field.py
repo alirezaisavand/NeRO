@@ -8,6 +8,8 @@ import mcubes
 from utils.base_utils import az_el_to_points, sample_sphere
 from utils.raw_utils import linear_to_srgb
 from utils.ref_utils import generate_ide_fn
+
+from pointnerf.models.mvs.mvs_points_model import device
 from pointnerf.models.neural_points.neural_points import NeuralPoints
 from pointnerf.models.aggregators.point_aggregators import PointAggregator
 
@@ -970,40 +972,48 @@ class MCShadingNetwork(nn.Module):
             torch.Tensor: Tensor of shape (M, k, E) containing the embeddings of the
                           k-nearest neighbors for each point in pts.
         """
-        # Convert pts to a NumPy array if it's a tensor, as kdtree expects a NumPy array for queries
-        pts_np = pts.cpu().numpy() if isinstance(pts, torch.Tensor) else pts
-
-        # Initialize a list to store embeddings
-        all_embeddings = []
-        all_colors = []
-        all_confs = []
-        all_xyz = []
-        # all_dir = []
-        # Loop over each query point in pts
-        for query_point in pts_np:
-            # Find k-nearest neighbors for the query point
-            # [k, idx, _] = kdtree.search_knn_vector_3d(query_point, k)
-            idx = list(range(0, k))
-            # Retrieve embeddings of the neighbors
-            neighbor_embeddings = neural_points.points_embeding[0][idx]
-            neighbor_colors = neural_points.points_color[0][idx]
-            neighbor_confs = neural_points.points_conf[0][idx]
-            neighbor_xyz = neural_points.xyz[0][idx]
-            # neighbor_dir = neural_points.points_dir[0][idx]
-            # Append the embeddings to the list
-            all_embeddings.append(neighbor_embeddings)
-            all_colors.append(neighbor_colors)
-            all_confs.append(neighbor_confs)
-            all_xyz.append(neighbor_xyz)
-            # all_dir.append(neighbor_dir)
-
-        # Convert the list of embeddings to a tensor of shape (M, k, E)
-        all_embeddings_tensor = torch.stack([embedding for embedding in all_embeddings])
-        all_colors = torch.stack([color for color in all_colors])
-        all_confs = torch.stack([conf for conf in all_confs])
-        all_xyz = torch.stack([xyz for xyz in all_xyz])
-        # all_dir = torch.stack([dir for dir in all_dir])
-        return all_embeddings_tensor, all_colors, all_confs, all_xyz
+        pts_np = pts.cpu().numpy()  # Convert query points to NumPy
+        distances, indices = kdtree.search(pts_np, k)  # Perform k-NN search
+        indices_tensor = torch.tensor(indices, device=pts.device)  # Convert indices to tensor
+        embeddings = neural_points.points_embeding[0][indices_tensor]
+        colors = neural_points.points_color[0][indices_tensor]
+        confs = neural_points.points_conf[0][indices_tensor]
+        xyz = neural_points.xyz[0][indices_tensor]
+        return embeddings, colors, confs, xyz
+        # # Convert pts to a NumPy array if it's a tensor, as kdtree expects a NumPy array for queries
+        # pts_np = pts.cpu().numpy() if isinstance(pts, torch.Tensor) else pts
+        #
+        # # Initialize a list to store embeddings
+        # all_embeddings = []
+        # all_colors = []
+        # all_confs = []
+        # all_xyz = []
+        # # all_dir = []
+        # # Loop over each query point in pts
+        # for query_point in pts_np:
+        #     # Find k-nearest neighbors for the query point
+        #     # [k, idx, _] = kdtree.search_knn_vector_3d(query_point, k)
+        #     idx = list(range(0, k))
+        #     # Retrieve embeddings of the neighbors
+        #     neighbor_embeddings = neural_points.points_embeding[0][idx]
+        #     neighbor_colors = neural_points.points_color[0][idx]
+        #     neighbor_confs = neural_points.points_conf[0][idx]
+        #     neighbor_xyz = neural_points.xyz[0][idx]
+        #     # neighbor_dir = neural_points.points_dir[0][idx]
+        #     # Append the embeddings to the list
+        #     all_embeddings.append(neighbor_embeddings)
+        #     all_colors.append(neighbor_colors)
+        #     all_confs.append(neighbor_confs)
+        #     all_xyz.append(neighbor_xyz)
+        #     # all_dir.append(neighbor_dir)
+        #
+        # # Convert the list of embeddings to a tensor of shape (M, k, E)
+        # all_embeddings_tensor = torch.stack([embedding for embedding in all_embeddings])
+        # all_colors = torch.stack([color for color in all_colors])
+        # all_confs = torch.stack([conf for conf in all_confs])
+        # all_xyz = torch.stack([xyz for xyz in all_xyz])
+        # # all_dir = torch.stack([dir for dir in all_dir])
+        # return all_embeddings_tensor, all_colors, all_confs, all_xyz
 
     def w2pers(self, point_xyz, camrotc2w, campos):
         # print('initial shapes:',point_xyz.shape, campos.shape)
