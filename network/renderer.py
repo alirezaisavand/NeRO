@@ -909,25 +909,32 @@ class NeROMaterialRenderer(nn.Module):
         self.ray_tracer = raytracing.RayTracer(np.asarray(self.mesh.vertices), np.asarray(self.mesh.triangles))
 
         # Here we created point cloud from mesh
-        self.point_cloud = self.mesh.sample_points_uniformly(number_of_points=10000)
-        self.opt.cloud_path = "/home/NeRO/data/point_cloud.ply" # Change it to specidied path
+        self.point_cloud = self.mesh.sample_points_uniformly(number_of_points=1000)
+        self.opt.cloud_path = "/home/NeRO/data/point_cloud.ply" # Change it to specified path
         open3d.io.write_point_cloud(self.opt.cloud_path, self.point_cloud)
 
         # initialize K-D tree for queries
         # self.kdtree = open3d.geometry.KDTreeFlann(self.point_cloud)
         # Kdtree in fact is not kdtree anymore
 
+
+        assert not torch.isnan(self.point_cloud.points).any(), "Dataset contains NaN values!"
+        assert not torch.isinf(self.point_cloud.points).any(), "Dataset contains Inf values!"
+        faiss.omp_set_num_threads(1)
+
         self.dimension = 3
         print('creating index...')
-        faiss.omp_set_num_threads(1)
-        self.kdtree = faiss.IndexFlatL2(self.dimension)
+        kdtree = faiss.IndexFlatL2(self.dimension)
         print('index created')
-        print('moving index to GPU')
-        self.kdtree = faiss.index_cpu_to_gpu(faiss.StandardGpuResources(), 0, self.kdtree)
-        print('index moved to GPU')
-        print('adding points to index')
-        self.kdtree.add(self.point_cloud)
+
+        print('adding points to index...')
+        self.kdtree.add(self.point_cloud.points.cpu().numpy())
         print('points added to index')
+
+        print('moving index to GPU...')
+        self.kdtree = faiss.index_cpu_to_gpu(faiss.StandardGpuResources(), 0, kdtree)
+        print('index moved to GPU')
+
         opt = self.opt
         import os
         # checkpoint_path = os.path.join(opt.checkpoints_dir, opt.name, '{}_net_ray_marching.pth'.format(opt.resume_iter))
