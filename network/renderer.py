@@ -1270,7 +1270,7 @@ class NeROMaterialRenderer(nn.Module):
                 cam2worlds = ray_batch['cam2worlds'][ri:ri + trn][hit_mask]
                 print('intrinsics shape:', intrinsics.shape, 'world2cams shape:', world2cams.shape, 'cam2worlds shape:', cam2worlds.shape)
                 print('shape before hit mask:', ray_batch['intrinsics'][ri:ri + trn].shape, ray_batch['world2cams'][ri:ri + trn].shape, ray_batch['cam2worlds'][ri:ri + trn].shape)
-                shade_outputs = self.shade(pts, view_dirs, normals, human_poses, False, intrinsics, proj_mats, world2cams, cam2worlds)
+                shade_outputs = self.shade(pts, view_dirs, normals, human_poses, False, None, intrinsics, proj_mats, world2cams, cam2worlds)
 
                 outputs_cur['rgb_pr'][hit_mask] = shade_outputs['rgb_pr']
                 outputs_cur['rgb_gt'][hit_mask] = rgb_gt
