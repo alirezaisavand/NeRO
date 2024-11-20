@@ -326,6 +326,8 @@ class Trainer:
         self._init_network()
         self._init_logger()
 
+        self.load_init_points()
+
 
         best_para, start_step = self._load_model()
         train_iter = iter(self.train_set)
@@ -334,7 +336,7 @@ class Trainer:
         pbar.update(start_step)
 
         # Here we load points embeddings
-        self.load_init_points()
+
 
         for step in range(start_step, self.cfg['total_step']):
             try:
