@@ -315,8 +315,6 @@ class Trainer:
                                  points_color=points_color_all.cuda(),
                                  points_dir=None, points_conf=points_conf_all.cuda(),
                                  Rw2c=normRw2c.cuda() if opt.load_points < 1 and opt.normview != 3 else None)
-                epoch_count = 1
-                total_steps = 0
 
                 del points_xyz_all, points_embedding_all, points_color_all, points_dir_all, points_conf_all
 
