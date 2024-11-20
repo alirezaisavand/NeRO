@@ -1262,12 +1262,12 @@ class NeROMaterialRenderer(nn.Module):
                 human_poses = ray_batch['human_poses'][ri:ri + trn][hit_mask]
 
                 # Here we get additional parameters for neural points from batch
-                # intrinsics = ray_batch['intrinsics'][ri:ri + trn][hit_mask]
-                # proj_mats = ray_batch['proj_mats'][ri:ri + trn][hit_mask]
-                # near_fars = ray_batch['near_fars'][ri:ri + trn][hit_mask]
-                # proj_mats = (proj_mats, near_fars)
-                # world2cams = ray_batch['world2cams'][ri:ri + trn][hit_mask]
-                # cam2worlds = ray_batch['cam2worlds'][ri:ri + trn][hit_mask]
+                intrinsics = ray_batch['intrinsics'][ri:ri + trn][hit_mask]
+                proj_mats = ray_batch['proj_mats'][ri:ri + trn][hit_mask]
+                near_fars = ray_batch['near_fars'][ri:ri + trn][hit_mask]
+                proj_mats = (proj_mats, near_fars)
+                world2cams = ray_batch['world2cams'][ri:ri + trn][hit_mask]
+                cam2worlds = ray_batch['cam2worlds'][ri:ri + trn][hit_mask]
 
                 shade_outputs = self.shade(pts, view_dirs, normals, human_poses, False, intrinsics, proj_mats, world2cams, cam2worlds)
 
