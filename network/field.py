@@ -1071,16 +1071,34 @@ class MCShadingNetwork(nn.Module):
         color_in, alpha_in, ray_valid, weight, conf_coefficient = aggregator(sampled_color.unsqueeze(0).unsqueeze(2), sampled_Rw2c, sampled_dir, sampled_conf.unsqueeze(0).unsqueeze(2), sampled_embedding.unsqueeze(0).unsqueeze(2), sampled_xyz_pers, sampled_xyz.unsqueeze(0).unsqueeze(2), sample_pnt_mask.unsqueeze(0).unsqueeze(2), sample_loc, sample_loc_w.unsqueeze(0).unsqueeze(2), None, None, None)
         # print('color_in shape:', color_in.shape)
         weight = weight * conf_coefficient
+        weight = weight.view(1 * color_in.shape[0] * 1, self.k, 1)
         print('alpha_in shape:', alpha_in.shape)
         print('color_in shape:', color_in.shape)
         print('color_in shape after:', torch.cat([color_in, pts], -1).shape)
         print('weight shape:', weight.shape)
+
+        m = self.metallic_predictor(torch.cat([alpha_in, pts.repeat_interleave(self.k, dim=0)], -1))
+        m = m.view(1 * color_in.shape[0] * 1, self.k, m.shape[-1])
+        m = torch.sum(m * weight, dim=-2).view([-1, m.shape[-1]])
+
+        r = self.roughness_predictor(torch.cat([alpha_in, pts.repeat_interleave(self.k, dim=0)], -1))
+        r = r.view(1 * color_in.shape[0] * 1, self.k, r.shape[-1])
+        r = torch.sum(r * weight, dim=-2).view([-1, r.shape[-1]])
+
+        a = self.albedo_predictor(torch.cat([alpha_in, pts.repeat_interleave(self.k, dim=0)], -1))
+        a = a.view(1 * color_in.shape[0] * 1, self.k, a.shape[-1])
+        a = torch.sum(a * weight, dim=-2).view([-1, a.shape[-1]])
+
 
         metallic = self.metallic_predictor(torch.cat([color_in, pts], -1))
         roughness = self.roughness_predictor(torch.cat([color_in, pts], -1))
         rmax, rmin = 1.0, 0.04 ** 2
         roughness = roughness * (rmax - rmin) + rmin
         albedo = self.albedo_predictor(torch.cat([color_in, pts], -1))
+
+        print('metalic:', m.shape, metallic.shape)
+        print('roughness:', r.shape, roughness.shape)
+        print('albedo:', a.shape, albedo.shape)
 
         return metallic, roughness, albedo
 
