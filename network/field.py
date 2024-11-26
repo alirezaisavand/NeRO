@@ -1073,7 +1073,7 @@ class MCShadingNetwork(nn.Module):
         weight = weight * conf_coefficient
         print('alpha_in shape:', alpha_in.shape)
         print('color_in shape:', color_in.shape)
-        print('color_in shape after:', torch.cat([color_in, pts], -1))
+        print('color_in shape after:', torch.cat([color_in, pts], -1).shape)
         print('weight shape:', weight.shape)
 
         metallic = self.metallic_predictor(torch.cat([color_in, pts], -1))
