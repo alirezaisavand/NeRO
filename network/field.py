@@ -1045,10 +1045,9 @@ class MCShadingNetwork(nn.Module):
         # camrotc2w = camrot.float() # @ FLIP_Z
         camtorc2w = None
         # print('neural points embeddings shape:', neural_points.points_embeding.shape)
-        sampled_embedding, sampled_color, sampled_conf, sampled_xyz = self.get_k_nearest_embeddings(pts,
-                                                                                                                 kdtree,
-                                                                                                                 self.k,
-                                                                                                                 neural_points)
+        sampled_embedding, sampled_color, sampled_conf, sampled_xyz = self.get_k_nearest_embeddings(pts, kdtree,
+                                                                                                         self.k,
+                                                                                                         neural_points)
 
         sampled_dir = None
         # Here remove perspective points since we want to use world coordinated and with this batch sampling can't use perspective points
@@ -1069,15 +1068,20 @@ class MCShadingNetwork(nn.Module):
         # print('sample xyz shape:', sampled_xyz.unsqueeze(0).unsqueeze(2).shape, 'expected:', 'B x valid x R x SR x K x 3')
         # print('sample pnt mask shape:', sample_pnt_mask.unsqueeze(0).unsqueeze(2).shape, 'expected:', 'B x valid x R x SR x K')
         # print('sample loc w shape:', sample_loc_w.unsqueeze(0).unsqueeze(2).shape, 'expected:', 'B x valid x R x SR x 3')
-        color_in, decoded_features, ray_valid, weight, conf_coefficient = aggregator(sampled_color.unsqueeze(0).unsqueeze(2), sampled_Rw2c, sampled_dir, sampled_conf.unsqueeze(0).unsqueeze(2), sampled_embedding.unsqueeze(0).unsqueeze(2), sampled_xyz_pers, sampled_xyz.unsqueeze(0).unsqueeze(2), sample_pnt_mask.unsqueeze(0).unsqueeze(2), sample_loc, sample_loc_w.unsqueeze(0).unsqueeze(2), None, None, None)
+        color_in, alpha_in, ray_valid, weight, conf_coefficient = aggregator(sampled_color.unsqueeze(0).unsqueeze(2), sampled_Rw2c, sampled_dir, sampled_conf.unsqueeze(0).unsqueeze(2), sampled_embedding.unsqueeze(0).unsqueeze(2), sampled_xyz_pers, sampled_xyz.unsqueeze(0).unsqueeze(2), sample_pnt_mask.unsqueeze(0).unsqueeze(2), sample_loc, sample_loc_w.unsqueeze(0).unsqueeze(2), None, None, None)
         # print('color_in shape:', color_in.shape)
-
+        weight = weight * conf_coefficient
+        print('alpha_in shape:', alpha_in.shape)
+        print('color_in shape:', color_in.shape)
+        print('color_in shape after:', torch.cat([color_in, pts], -1))
+        print('weight shape:', weight.shape)
 
         metallic = self.metallic_predictor(torch.cat([color_in, pts], -1))
         roughness = self.roughness_predictor(torch.cat([color_in, pts], -1))
         rmax, rmin = 1.0, 0.04 ** 2
         roughness = roughness * (rmax - rmin) + rmin
         albedo = self.albedo_predictor(torch.cat([color_in, pts], -1))
+
         return metallic, roughness, albedo
 
     def distribution_ggx(self, NoH, roughness):
