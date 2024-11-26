@@ -4,7 +4,6 @@ import torch
 import numpy as np
 import nvdiffrast.torch as dr
 import mcubes
-from numpy.distutils.system_info import agg2_info
 
 from utils.base_utils import az_el_to_points, sample_sphere
 from utils.raw_utils import linear_to_srgb
@@ -595,7 +594,7 @@ class AppShadingNetwork(nn.Module):
         occ_prob_ = torch.clamp(occ_prob, min=0, max=1)
 
         light = indirect_light * occ_prob_ + (human_light * human_weight + direct_light * (1 - human_weight)) * (
-                1 - occ_prob_)
+                    1 - occ_prob_)
         indirect_light = indirect_light * occ_prob_
         return light, occ_prob, indirect_light, human_light * human_weight
 
@@ -755,7 +754,7 @@ class MCShadingNetwork(nn.Module):
         self.k = 8
         # Here we change the input dimension
         in_channels = cfg['shading_feature_num'] + 3 * 2 * cfg['num_viewdir_freqs']
-        self.metallic_predictor = make_predictor(in_channels + 3, 1)
+        self.metallic_predictor = make_predictor(in_channels+3 , 1)
         self.roughness_predictor = make_predictor(in_channels + 3, 1)
         self.albedo_predictor = make_predictor(in_channels + 3, 3)
 
@@ -1047,28 +1046,20 @@ class MCShadingNetwork(nn.Module):
         # camrotc2w = camrot.float() # @ FLIP_Z
         camtorc2w = None
         sampled_embedding, sampled_color, sampled_conf, sampled_xyz = self.get_k_nearest_embeddings(pts, kdtree,
-                                                                                                    self.k,
-                                                                                                    neural_points)
+                                                                                                         self.k,
+                                                                                                         neural_points)
 
         sampled_dir = None
         # Here remove perspective points since we want to use world coordinated and with this batch sampling can't use perspective points
         # sampled_xyz_pers = self.w2pers(neural_points.xyz, camrotc2w, campos)
         sampled_xyz_pers = None
 
+
         sample_loc_w = pts
         sample_loc = None
         sampled_Rw2c = neural_points.Rw2c
         sample_pnt_mask = torch.ones_like(sampled_embedding[:, :, 0], dtype=torch.bool)
-        color_in, alpha_in, ray_valid, weight, conf_coefficient = aggregator(sampled_color.unsqueeze(0).unsqueeze(2),
-                                                                             sampled_Rw2c, sampled_dir,
-                                                                             sampled_conf.unsqueeze(0).unsqueeze(2),
-                                                                             sampled_embedding.unsqueeze(0).unsqueeze(
-                                                                                 2), sampled_xyz_pers,
-                                                                             sampled_xyz.unsqueeze(0).unsqueeze(2),
-                                                                             sample_pnt_mask.unsqueeze(0).unsqueeze(2),
-                                                                             sample_loc,
-                                                                             sample_loc_w.unsqueeze(0).unsqueeze(2),
-                                                                             None, None, None)
+        color_in, alpha_in, ray_valid, weight, conf_coefficient = aggregator(sampled_color.unsqueeze(0).unsqueeze(2), sampled_Rw2c, sampled_dir, sampled_conf.unsqueeze(0).unsqueeze(2), sampled_embedding.unsqueeze(0).unsqueeze(2), sampled_xyz_pers, sampled_xyz.unsqueeze(0).unsqueeze(2), sample_pnt_mask.unsqueeze(0).unsqueeze(2), sample_loc, sample_loc_w.unsqueeze(0).unsqueeze(2), None, None, None)
 
         if density_agg:
             weight = weight * conf_coefficient
@@ -1093,6 +1084,7 @@ class MCShadingNetwork(nn.Module):
 
         rmax, rmin = 1.0, 0.04 ** 2
         roughness = roughness * (rmax - rmin) + rmin
+
 
         return metallic, roughness, albedo
 
@@ -1132,7 +1124,7 @@ class MCShadingNetwork(nn.Module):
         NoH_s = saturate_dot(normals.unsqueeze(1), H_s)
         VoH_s = saturate_dot(view_dirs.unsqueeze(1), H_s)
         specular_probability = self.distribution_ggx(NoH_s, roughness.unsqueeze(1)) * NoH_s / (4 * VoH_s + 1e-5) * (
-                specular_num / (specular_num + diffuse_num))  # D * NoH / (4 * VoH)
+                    specular_num / (specular_num + diffuse_num))  # D * NoH / (4 * VoH)
 
         # combine
         directions = torch.cat([diffuse_directions, specular_directions], 1)
@@ -1178,13 +1170,11 @@ class MCShadingNetwork(nn.Module):
             linear_to_srgb(torch.mean(kd[:, :diffuse_num] * diffuse_lights, dim=1) + specular_colors), min=0, max=1)
         return colors, outputs
 
-    def forward(self, aggregator, kdtree, neural_points, point_cloud, pts, view_dirs, normals, human_poses, step,
-                is_train, intrinsics=None, proj_mats=None, world2cams=None, cam2worlds=None):
+    def forward(self, aggregator, kdtree, neural_points, point_cloud, pts, view_dirs, normals, human_poses, step, is_train, intrinsics=None, proj_mats=None, world2cams=None, cam2worlds=None):
         view_dirs, normals = F.normalize(view_dirs, dim=-1), F.normalize(normals, dim=-1)
         reflections = torch.sum(view_dirs * normals, -1, keepdim=True) * normals * 2 - view_dirs
         metallic, roughness, albedo = self.predict_materials(aggregator, kdtree, neural_points, point_cloud, pts,
-                                                             intrinsics, proj_mats, world2cams,
-                                                             cam2worlds)  # [pn,1] [pn,1] [pn,3]
+                                                             intrinsics, proj_mats, world2cams, cam2worlds)  # [pn,1] [pn,1] [pn,3]
         return self.shade_mixed(pts, normals, view_dirs, reflections, metallic, roughness, albedo, human_poses,
                                 is_train)
 
@@ -1228,8 +1218,7 @@ class MCShadingNetwork(nn.Module):
     def get_env_light(self):
         return self.predict_outer_lights_pts(self.light_pts)
 
-    def material_regularization(self, aggregator, kdtree, neural_points, point_cloud, pts, normals, metallic, roughness,
-                                albedo, step,
+    def material_regularization(self, aggregator, kdtree, neural_points, point_cloud, pts, normals, metallic, roughness, albedo, step,
                                 intrinsincs, proj_mats, world2cams, cam2worlds):
         # metallic, roughness, albedo = self.predict_materials(pts)
         reg = 0
