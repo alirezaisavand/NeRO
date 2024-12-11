@@ -413,11 +413,11 @@ class Trainer:
                                                                                    self.network.neural_points.xyz.squeeze(
                                                                                        0), None, None, None, None)
         print(metalic.shape, roughness.shape, albedo.shape)
-        np.savez("material.npz", tensor1=metalic.detach().cpu().numpy(), tensor2=roughness.detach().cpu().numpy(),
-                 tensor3=albedo.detach().cpu().numpy(),
-                 tensor4=self.network.neural_points.xyz.squeeze(0).detach().cpu().numpy(),
-                 tensor5=self.network.neural_points.points_embeding.squeeze(0).detach().cpu().numpy(),
-                 tensor6=self.network.neural_points.points_conf.squeeze(0).detach().cpu().numpy())
+        np.savez("material.npz", metalic=metalic.detach().cpu().numpy(), roughness=roughness.detach().cpu().numpy(),
+                 albedo=albedo.detach().cpu().numpy(),
+                 xyz=self.network.neural_points.xyz.squeeze(0).detach().cpu().numpy(),
+                 embedding=self.network.neural_points.points_embeding.squeeze(0).detach().cpu().numpy(),
+                 conf=self.network.neural_points.points_conf.squeeze(0).detach().cpu().numpy())
         print('points features are saved')
 
     def _load_model(self):
