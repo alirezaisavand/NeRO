@@ -1029,13 +1029,16 @@ class MCShadingNetwork(nn.Module):
 
     def predict_materials(self, aggregator, kdtree, neural_points, point_cloud, pts,
                           intrinsic, proj_mats, world2cams, cam2worlds):
-        density_agg = True
+
+        print('pts shape:', pts.shape)
+        density_agg = False
+
         # change to neural points
         # Here we change the way we extract points features using neural points
         # agg_feats = self.feats_network(pts)
-        w2c = world2cams
-        c2w = cam2worlds.float()
-        proj_mat_ls, near_far = proj_mats
+        # w2c = world2cams
+        # c2w = cam2worlds.float()
+        # proj_mat_ls, near_far = proj_mats
 
         # camrot = c2w[:, :, 0:3, 0:3].float()
         camrot = None

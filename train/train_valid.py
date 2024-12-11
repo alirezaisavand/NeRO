@@ -8,7 +8,7 @@ from network.metrics import name2key_metrics
 from train.train_tools import to_cuda
 
 
-class ValidationEvaluator:
+class   ValidationEvaluator:
     default_cfg = {}
 
     def __init__(self, cfg):
