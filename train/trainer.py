@@ -1,3 +1,4 @@
+import json
 import os
 import random
 from pathlib import Path
@@ -19,14 +20,15 @@ from utils.dataset_utils import dummy_collate_fn
 from NeRO.network.renderer import ConfigWrapper
 from pointnerf.data import create_dataset
 
+
 def get_latest_epoch(resume_dir):
     os.makedirs(resume_dir, exist_ok=True)
     str_epoch = [file.split("_")[0] for file in os.listdir(resume_dir) if file.endswith("_states.pth")]
     int_epoch = [int(i) for i in str_epoch]
     return None if len(int_epoch) == 0 else str_epoch[int_epoch.index(max(int_epoch))]
 
-def nearest_view(campos, raydir, xyz, id_list):
 
+def nearest_view(campos, raydir, xyz, id_list):
     cam_ind = torch.zeros([0, 1], device=campos.device, dtype=torch.long)
     step = 10000
     for i in range(0, len(xyz), step):
@@ -36,6 +38,7 @@ def nearest_view(campos, raydir, xyz, id_list):
         dists = dists_norm / 200 + (1.1 - torch.sum(dists_dir * raydir[None, :], dim=-1))  # N, M
         cam_ind = torch.cat([cam_ind, torch.argmin(dists, dim=1).view(-1, 1)], dim=0)  # N, 1
     return cam_ind
+
 
 class Trainer:
     default_cfg = {
@@ -108,7 +111,6 @@ class Trainer:
         self.lr_manager = name2lr_manager[self.cfg['lr_type']](self.cfg['lr_cfg'])
         self.optimizer = self.lr_manager.construct_optimizer(self.optimizer, self.network)
 
-
     def __init__(self, cfg):
         self.cfg = {**self.default_cfg, **cfg}
 
@@ -125,7 +127,6 @@ class Trainer:
         self.best_pth_fn = os.path.join(self.model_dir, 'model_best.pth')
 
     # Here we use a function from pointnerf train_ft.py
-
 
     # Here we load initial points embeddings
     def load_init_points(self):
@@ -187,7 +188,6 @@ class Trainer:
                 # model.eval()
                 print('load points:', load_points)
                 if load_points in [1, 3]:
-
                     points_xyz_all = train_dataset.load_init_points()
                 # if load_points == 2:
                 #     points_xyz_all = train_dataset.load_init_depth_points(device="cuda", vox_res=100)
@@ -277,9 +277,11 @@ class Trainer:
                     cam_xyz_all = (torch.cat([points_xyz_all[i], torch.ones_like(points_xyz_all[i][..., -1:])],
                                              dim=-1) @ w2c.transpose(0, 1))[..., :3]
                     embedding, color, dir, conf = self.network.query_embedding(HDWD, cam_xyz_all[None, ...], None,
-                                                                        batch['images'].cuda(), c2w[None, None, ...],
-                                                                        w2c[None, None, ...], intrinsic[:, None, ...],
-                                                                        0, pointdir_w=True)
+                                                                               batch['images'].cuda(),
+                                                                               c2w[None, None, ...],
+                                                                               w2c[None, None, ...],
+                                                                               intrinsic[:, None, ...],
+                                                                               0, pointdir_w=True)
                     conf = conf * opt.default_conf if opt.default_conf > 0 and opt.default_conf < 1.0 else conf
                     points_embedding_all = torch.cat([points_embedding_all, embedding], dim=1)
                     points_color_all = torch.cat([points_color_all, color], dim=1)
@@ -312,12 +314,11 @@ class Trainer:
                 points_xyz_all = points_xyz_all.unsqueeze(0)
 
                 self.network.set_points(points_xyz_all.cuda(), points_embedding_all.cuda(),
-                                 points_color=points_color_all.cuda(),
-                                 points_dir=None, points_conf=points_conf_all.cuda(),
-                                 Rw2c=normRw2c.cuda() if opt.load_points < 1 and opt.normview != 3 else None)
+                                        points_color=points_color_all.cuda(),
+                                        points_dir=None, points_conf=points_conf_all.cuda(),
+                                        Rw2c=normRw2c.cuda() if opt.load_points < 1 and opt.normview != 3 else None)
 
                 del points_xyz_all, points_embedding_all, points_color_all, points_dir_all, points_conf_all
-
 
     def run(self):
         self._init_dataset()
@@ -326,7 +327,6 @@ class Trainer:
 
         self.load_init_points()
 
-
         best_para, start_step = self._load_model()
         train_iter = iter(self.train_set)
 
@@ -334,7 +334,6 @@ class Trainer:
         pbar.update(start_step)
 
         # Here we load points embeddings
-
 
         for step in range(start_step, self.cfg['total_step']):
             try:
@@ -407,23 +406,21 @@ class Trainer:
 
         pbar.close()
 
-
         print('neural points xyz shape:', self.network.neural_points.xyz.squeeze(0).shape)
-        metalic, roughness, albedo = self.network.shader_network.predict_materials(self.network.aggregator, self.network.kdtree, self.network.neural_points, None, self.network.neural_points.xyz.squeeze(0), None, None, None, None)
+        metalic, roughness, albedo = self.network.shader_network.predict_materials(self.network.aggregator,
+                                                                                   self.network.kdtree,
+                                                                                   self.network.neural_points, None,
+                                                                                   self.network.neural_points.xyz.squeeze(
+                                                                                       0), None, None, None, None)
         print(metalic.shape, roughness.shape, albedo.shape)
-        np.savez("material.npz", tensor1=metalic.detach().cpu().numpy(), tensor2=roughness.detach().cpu().numpy(), tensor3=albedo.detach().cpu().numpy())
-        print('material saved successfully')
-
-        # Convert class attributes to a dictionary of NumPy arrays
-        for key, value in self.network.neural_points.__dict__.items():
-            print(key, ':', type(value).__name__)
-        data_to_save = {key: value.numpy() for key, value in self.network.neural_points.__dict__.items() if
-                        isinstance(value, torch.Tensor)}
-
-        # Save the dictionary as a .npz file
-        np.savez("saved_features.npz", **data_to_save)
-        print('neutal pts xyz:', self.network.neural_points.xyz)
-        print("Class tensors saved in NumPy format.")
+        np.savez("material.npz", tensor1=metalic.detach().cpu().numpy(), tensor2=roughness.detach().cpu().numpy(),
+                 tensor3=albedo.detach().cpu().numpy(),
+                 tensor4=self.network.neural_points.xyz.squeeze(0).detach().cpu().numpy(),
+                 tensor5=self.network.neural_points.points_embeding.squeeze(0).detach().cpu().numpy(),
+                 tensor6=self.network.neural_points.points_conf.squeeze(0).detach().cpu().numpy(),
+                 tensor7=self.network.neural_points.points_dir.squeeze(0).detach().cpu().numpy(),
+                 tensor8=self.network.neural_points.points_color.squeeze(0).detach().cpu().numpy())
+        print('points features are saved')
 
     def _load_model(self):
         best_para, start_step = 0, 0
