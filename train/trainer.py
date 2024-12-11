@@ -408,8 +408,8 @@ class Trainer:
         pbar.close()
 
 
-        print('neural points xyz shape:', self.network.neural_points.xyz.shape)
-        metalic, roughness, albedo = self.network.shader_network.predict_materials(self.network.aggregator, self.network.kdtree, self.network.neural_points, None, self.network.neural_points.xyz, None, None, None, None)
+        print('neural points xyz shape:', self.network.neural_points.xyz.squeeze(0).shape)
+        metalic, roughness, albedo = self.network.shader_network.predict_materials(self.network.aggregator, self.network.kdtree, self.network.neural_points, None, self.network.neural_points.xyz.squeeze(0), None, None, None, None)
         print(metalic.shape, roughness.shape, albedo.shape)
 
     def _load_model(self):
