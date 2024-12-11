@@ -422,7 +422,7 @@ class Trainer:
 
         # Save the dictionary as a .npz file
         np.savez("saved_features.npz", **data_to_save)
-
+        print('neutal pts xyz:', self.network.neural_points.xyz)
         print("Class tensors saved in NumPy format.")
 
     def _load_model(self):
