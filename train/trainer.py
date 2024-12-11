@@ -412,6 +412,16 @@ class Trainer:
         metalic, roughness, albedo = self.network.shader_network.predict_materials(self.network.aggregator, self.network.kdtree, self.network.neural_points, None, self.network.neural_points.xyz.squeeze(0), None, None, None, None)
         print(metalic.shape, roughness.shape, albedo.shape)
         np.savez("material.npz", tensor1=metalic.detach().cpu().numpy(), tensor2=roughness.detach().cpu().numpy(), tensor3=albedo.detach().cpu().numpy())
+        print('material saved successfully')
+
+        # Convert class attributes to a dictionary of NumPy arrays
+        data_to_save = {key: value.numpy() for key, value in self.network.neural_points.__dict__.items() if
+                        isinstance(value, torch.Tensor)}
+
+        # Save the dictionary as a .npz file
+        np.savez("saved_features.npz", **data_to_save)
+
+        print("Class tensors saved in NumPy format.")
 
     def _load_model(self):
         best_para, start_step = 0, 0
