@@ -417,9 +417,7 @@ class Trainer:
                  tensor3=albedo.detach().cpu().numpy(),
                  tensor4=self.network.neural_points.xyz.squeeze(0).detach().cpu().numpy(),
                  tensor5=self.network.neural_points.points_embeding.squeeze(0).detach().cpu().numpy(),
-                 tensor6=self.network.neural_points.points_conf.squeeze(0).detach().cpu().numpy(),
-                 tensor7=self.network.neural_points.points_dir.squeeze(0).detach().cpu().numpy(),
-                 tensor8=self.network.neural_points.points_color.squeeze(0).detach().cpu().numpy())
+                 tensor6=self.network.neural_points.points_conf.squeeze(0).detach().cpu().numpy())
         print('points features are saved')
 
     def _load_model(self):
