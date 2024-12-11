@@ -415,6 +415,8 @@ class Trainer:
         print('material saved successfully')
 
         # Convert class attributes to a dictionary of NumPy arrays
+        for key, value in self.network.neural_points.__dict__.items():
+            print(key, ':', type(value).__name__)
         data_to_save = {key: value.numpy() for key, value in self.network.neural_points.__dict__.items() if
                         isinstance(value, torch.Tensor)}
 
