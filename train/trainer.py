@@ -421,7 +421,8 @@ class Trainer:
         #          embedding=self.network.neural_points.points_embeding.squeeze(0).detach().cpu().numpy(),
         #          conf=self.network.neural_points.points_conf.squeeze(0).detach().cpu().numpy())
         # print('points features are saved')
-
+        self.network.neural_points.points_embeding = torch.from_numpy(np.load('embeddings.npy')).cuda()
+        print('new embedding loaded successfully')
         torch.cuda.empty_cache()
         val_results = {}
         for vi, val_set in enumerate(self.val_set_list):
