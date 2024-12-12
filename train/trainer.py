@@ -430,6 +430,8 @@ class Trainer:
         if val_set_name is not None: model_name = f'{model_name}-{val_set_name}'
         model.eval()
         eval_results = {}
+
+        train_iter = iter(self.train_set)
         self.train_set.dataset.reset()
 
         for data_i in range(len(self.train_set)):
