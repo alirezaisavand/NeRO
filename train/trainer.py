@@ -22,6 +22,7 @@ from NeRO.network.metrics import MaterialRenderMetrics
 from NeRO.network.renderer import ConfigWrapper
 from pointnerf.data import create_dataset
 
+import torch.nn as nn
 
 def get_latest_epoch(resume_dir):
     os.makedirs(resume_dir, exist_ok=True)
@@ -421,7 +422,7 @@ class Trainer:
         #          embedding=self.network.neural_points.points_embeding.squeeze(0).detach().cpu().numpy(),
         #          conf=self.network.neural_points.points_conf.squeeze(0).detach().cpu().numpy())
         # print('points features are saved')
-        self.network.neural_points.points_embeding = torch.from_numpy(np.load('embeddings.npy')).cuda()
+        self.network.neural_points.points_embeding = nn.parameter(torch.from_numpy(np.load('embeddings.npy')).cuda())
         print('new embedding loaded successfully')
         torch.cuda.empty_cache()
         val_results = {}
