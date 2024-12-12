@@ -1030,7 +1030,7 @@ class MCShadingNetwork(nn.Module):
     def predict_materials(self, aggregator, kdtree, neural_points, point_cloud, pts,
                           intrinsic, proj_mats, world2cams, cam2worlds):
 
-        density_agg = True
+        density_agg = False
 
         # change to neural points
         # Here we change the way we extract points features using neural points
