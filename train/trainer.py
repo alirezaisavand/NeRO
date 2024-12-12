@@ -422,7 +422,9 @@ class Trainer:
         #          embedding=self.network.neural_points.points_embeding.squeeze(0).detach().cpu().numpy(),
         #          conf=self.network.neural_points.points_conf.squeeze(0).detach().cpu().numpy())
         # print('points features are saved')
-        self.network.neural_points.points_embeding = nn.Parameter(torch.from_numpy(np.load('embeddings.npy')).cuda())
+        print('embedding shape before:', self.network.neural_points.points_embeding.shape)
+        self.network.neural_points.points_embeding = nn.Parameter(torch.from_numpy(np.load('embeddings.npy')).unsqueeze(0).cuda())
+        print('embedding shape after:', self.network.neural_points.points_embeding)
         print('new embedding loaded successfully')
         torch.cuda.empty_cache()
         val_results = {}
