@@ -422,18 +422,15 @@ class Trainer:
         #          conf=self.network.neural_points.points_conf.squeeze(0).detach().cpu().numpy())
         # print('points features are saved')
 
-        metric = MaterialRenderMetrics(self.cfg)
         torch.cuda.empty_cache()
         val_results = {}
-        val_para = 0
         for vi, val_set in enumerate(self.val_set_list):
             val_results_cur, val_para_cur = self.val_evaluator(
                 self.network, self.val_losses + self.val_metrics, val_set, 0,
                 self.model_name, val_set_name=self.val_set_names[vi])
             for k, v in val_results_cur.items():
                 val_results[f'{self.val_set_names[vi]}-{k}'] = v
-            # always use the final val set to select model!
-            val_para = val_para_cur
+
         
 
 
