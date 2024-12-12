@@ -432,7 +432,7 @@ class Trainer:
         eval_results = {}
 
         train_iter = iter(self.train_set)
-        self.train_set.dataset.reset()
+        # self.train_set.dataset.reset()
 
         for data_i in range(len(self.train_set)):
             train_iter = iter(self.train_set)
