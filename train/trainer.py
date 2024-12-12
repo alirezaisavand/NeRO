@@ -410,30 +410,30 @@ class Trainer:
         pbar.close()
 
         # print('neural points xyz shape:', self.network.neural_points.xyz.squeeze(0).shape)
-        metalic, roughness, albedo = self.network.shader_network.predict_materials(self.network.aggregator,
-                                                                                   self.network.kdtree,
-                                                                                   self.network.neural_points, None,
-                                                                                   self.network.neural_points.xyz.squeeze(
-                                                                                       0), None, None, None, None)
-        print(metalic.shape, roughness.shape, albedo.shape)
-        np.savez("material.npz", metalic=metalic.detach().cpu().numpy(), roughness=roughness.detach().cpu().numpy(),
-                 albedo=albedo.detach().cpu().numpy(),
-                 xyz=self.network.neural_points.xyz.squeeze(0).detach().cpu().numpy(),
-                 embedding=self.network.neural_points.points_embeding.squeeze(0).detach().cpu().numpy(),
-                 conf=self.network.neural_points.points_conf.squeeze(0).detach().cpu().numpy())
-        print('points features are saved')
-        # print('embedding shape before:', self.network.neural_points.points_embeding.shape)
-        # self.network.neural_points.points_embeding = nn.Parameter(torch.from_numpy(np.load('embeddings.npy')).unsqueeze(0).cuda())
-        # print('embedding shape after:', self.network.neural_points.points_embeding.shape)
-        # print('new embedding loaded successfully')
-        # torch.cuda.empty_cache()
-        # val_results = {}
-        # for vi, val_set in enumerate(self.val_set_list):
-        #     val_results_cur, val_para_cur = self.val_evaluator(
-        #         self.network, self.val_losses + self.val_metrics, val_set, 0,
-        #         self.model_name, val_set_name=self.val_set_names[vi])
-        #     for k, v in val_results_cur.items():
-        #         val_results[f'{self.val_set_names[vi]}-{k}'] = v
+        # metalic, roughness, albedo = self.network.shader_network.predict_materials(self.network.aggregator,
+        #                                                                            self.network.kdtree,
+        #                                                                            self.network.neural_points, None,
+        #                                                                            self.network.neural_points.xyz.squeeze(
+        #                                                                                0), None, None, None, None)
+        # print(metalic.shape, roughness.shape, albedo.shape)
+        # np.savez("material.npz", metalic=metalic.detach().cpu().numpy(), roughness=roughness.detach().cpu().numpy(),
+        #          albedo=albedo.detach().cpu().numpy(),
+        #          xyz=self.network.neural_points.xyz.squeeze(0).detach().cpu().numpy(),
+        #          embedding=self.network.neural_points.points_embeding.squeeze(0).detach().cpu().numpy(),
+        #          conf=self.network.neural_points.points_conf.squeeze(0).detach().cpu().numpy())
+        # print('points features are saved')
+        print('embedding shape before:', self.network.neural_points.points_embeding.shape)
+        self.network.neural_points.points_embeding = nn.Parameter(torch.from_numpy(np.load('embeddings.npy')).unsqueeze(0).cuda())
+        print('embedding shape after:', self.network.neural_points.points_embeding.shape)
+        print('new embedding loaded successfully')
+        torch.cuda.empty_cache()
+        val_results = {}
+        for vi, val_set in enumerate(self.val_set_list):
+            val_results_cur, val_para_cur = self.val_evaluator(
+                self.network, self.val_losses + self.val_metrics, val_set, 0,
+                self.model_name, val_set_name=self.val_set_names[vi])
+            for k, v in val_results_cur.items():
+                val_results[f'{self.val_set_names[vi]}-{k}'] = v
 
         
 
