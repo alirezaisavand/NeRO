@@ -17,6 +17,8 @@ from network.metrics import name2metrics
 from train.train_tools import to_cuda, Logger
 from train.train_valid import ValidationEvaluator
 from utils.dataset_utils import dummy_collate_fn
+
+from NeRO.network.metrics import MaterialRenderMetrics
 from NeRO.network.renderer import ConfigWrapper
 from pointnerf.data import create_dataset
 
@@ -406,19 +408,60 @@ class Trainer:
 
         pbar.close()
 
-        print('neural points xyz shape:', self.network.neural_points.xyz.squeeze(0).shape)
-        metalic, roughness, albedo = self.network.shader_network.predict_materials(self.network.aggregator,
-                                                                                   self.network.kdtree,
-                                                                                   self.network.neural_points, None,
-                                                                                   self.network.neural_points.xyz.squeeze(
-                                                                                       0), None, None, None, None)
-        print(metalic.shape, roughness.shape, albedo.shape)
-        np.savez("material.npz", metalic=metalic.detach().cpu().numpy(), roughness=roughness.detach().cpu().numpy(),
-                 albedo=albedo.detach().cpu().numpy(),
-                 xyz=self.network.neural_points.xyz.squeeze(0).detach().cpu().numpy(),
-                 embedding=self.network.neural_points.points_embeding.squeeze(0).detach().cpu().numpy(),
-                 conf=self.network.neural_points.points_conf.squeeze(0).detach().cpu().numpy())
-        print('points features are saved')
+        # print('neural points xyz shape:', self.network.neural_points.xyz.squeeze(0).shape)
+        # metalic, roughness, albedo = self.network.shader_network.predict_materials(self.network.aggregator,
+        #                                                                            self.network.kdtree,
+        #                                                                            self.network.neural_points, None,
+        #                                                                            self.network.neural_points.xyz.squeeze(
+        #                                                                                0), None, None, None, None)
+        # print(metalic.shape, roughness.shape, albedo.shape)
+        # np.savez("material.npz", metalic=metalic.detach().cpu().numpy(), roughness=roughness.detach().cpu().numpy(),
+        #          albedo=albedo.detach().cpu().numpy(),
+        #          xyz=self.network.neural_points.xyz.squeeze(0).detach().cpu().numpy(),
+        #          embedding=self.network.neural_points.points_embeding.squeeze(0).detach().cpu().numpy(),
+        #          conf=self.network.neural_points.points_conf.squeeze(0).detach().cpu().numpy())
+        # print('points features are saved')
+        _, _ = self.train_eval(
+            self.network, 0,
+            self.model_name)
+
+    def train_eval(self, model, step, model_name, val_set_name=None):
+        metric = MaterialRenderMetrics(self.cfg)
+        if val_set_name is not None: model_name = f'{model_name}-{val_set_name}'
+        model.eval()
+        eval_results = {}
+        self.train_set.dataset.reset()
+
+        for data_i in range(len(self.train_set)):
+            train_iter = iter(self.train_set)
+            data = next(train_iter)
+
+            if data_i % 10 != 0:
+                continue
+
+            data = to_cuda(data)
+            data['eval'] = True
+            data['step'] = step
+            with torch.no_grad():
+                outputs = model(data)
+
+            loss_results = metric(outputs, data, step, data_index=data_i, model_name=model_name)
+            for k, v in loss_results.items():
+                if type(v) == torch.Tensor:
+                    v = v.detach().cpu().numpy()
+
+                if k in eval_results:
+                    eval_results[k].append(v)
+                else:
+                    eval_results[k] = [v]
+
+        for k, v in eval_results.items():
+            eval_results[k] = np.concatenate(v, axis=0)
+
+
+        return eval_results, None
+
+
 
     def _load_model(self):
         best_para, start_step = 0, 0
