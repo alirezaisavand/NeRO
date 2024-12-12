@@ -421,47 +421,20 @@ class Trainer:
         #          embedding=self.network.neural_points.points_embeding.squeeze(0).detach().cpu().numpy(),
         #          conf=self.network.neural_points.points_conf.squeeze(0).detach().cpu().numpy())
         # print('points features are saved')
-        _, _ = self.train_eval(
-            self.network, 0,
-            self.model_name)
 
-    def train_eval(self, model, step, model_name, val_set_name=None):
         metric = MaterialRenderMetrics(self.cfg)
-        if val_set_name is not None: model_name = f'{model_name}-{val_set_name}'
-        model.eval()
-        eval_results = {}
-
-        train_iter = iter(self.train_set)
-        # self.train_set.dataset.reset()
-
-        for data_i in range(len(self.train_set)):
-            train_iter = iter(self.train_set)
-            data = next(train_iter)
-
-            if data_i % 10 != 0:
-                continue
-
-            data = to_cuda(data)
-            data['eval'] = True
-            data['step'] = step
-            with torch.no_grad():
-                outputs = model(data)
-
-            loss_results = metric(outputs, data, step, data_index=data_i, model_name=model_name)
-            for k, v in loss_results.items():
-                if type(v) == torch.Tensor:
-                    v = v.detach().cpu().numpy()
-
-                if k in eval_results:
-                    eval_results[k].append(v)
-                else:
-                    eval_results[k] = [v]
-
-        for k, v in eval_results.items():
-            eval_results[k] = np.concatenate(v, axis=0)
-
-
-        return eval_results, None
+        torch.cuda.empty_cache()
+        val_results = {}
+        val_para = 0
+        for vi, val_set in enumerate(self.val_set_list):
+            val_results_cur, val_para_cur = self.val_evaluator(
+                self.network, self.val_losses + self.val_metrics, val_set, 0,
+                self.model_name, val_set_name=self.val_set_names[vi])
+            for k, v in val_results_cur.items():
+                val_results[f'{self.val_set_names[vi]}-{k}'] = v
+            # always use the final val set to select model!
+            val_para = val_para_cur
+        
 
 
 
